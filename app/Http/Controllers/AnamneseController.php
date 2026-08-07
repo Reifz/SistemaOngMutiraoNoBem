@@ -69,9 +69,20 @@ class AnamneseController extends Controller
     public function formulario($id)
     {
         $crianca = Crianca::with('responsavel')->findOrFail($id);
+        $anoAtual = \App\Models\AnoLetivo::atual();
         
-        // Verifica se já existe anamnese para pré-carregar
-        $anamnese = \App\Models\Anamnese::where('crianca_id', $id)->first();
+        // Verifica se já existe anamnese para o ano atual
+        $anamnese = \App\Models\Anamnese::where('crianca_id', $id)
+            ->where('ano_letivo_id', $anoAtual ? $anoAtual->id : null)
+            ->first();
+            
+        if (!$anamnese) {
+            // Fallback para a mais recente de anos anteriores
+            $anamnese = \App\Models\Anamnese::where('crianca_id', $id)
+                ->orderBy('ano_letivo_id', 'desc')
+                ->first();
+        }
+
         $dados = $anamnese ? $anamnese->dados_json : [];
 
         return view('anamnese.formulario', compact('crianca', 'dados'));
@@ -84,6 +95,10 @@ class AnamneseController extends Controller
     {
         $crianca = Crianca::findOrFail($id);
         $anoAtual = \App\Models\AnoLetivo::atual();
+
+        if (!$anoAtual) {
+            return back()->with('error', 'NÃ£o hÃ¡ ano letivo ativo para salvar a anamnese.');
+        }
         
         // Coleta todos os campos exceto o token CSRF
         $dados = $request->except(['_token']);
@@ -92,7 +107,7 @@ class AnamneseController extends Controller
         \App\Models\Anamnese::updateOrCreate(
             [
                 'crianca_id' => $crianca->id,
-                'ano_letivo_id' => $anoAtual ? $anoAtual->id : null
+                'ano_letivo_id' => $anoAtual->id
             ],
             ['dados_json' => $dados]
         );
@@ -115,24 +130,35 @@ class AnamneseController extends Controller
             'data_hora' => now()
         ]);
 
+        if ($crianca->status === 'REMATRICULADA') {
+            return redirect()->route('rematricula.index')->with('success', 'Anamnese de ' . $crianca->nome . ' salva com sucesso! A criança agora está pronta para alocação de turma.');
+        }
+
         return redirect()->route('anamnese.index')->with('success', 'Anamnese salva com sucesso!');
     }
 
     /**
      * Exibe os dados da Anamnese.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $crianca = Crianca::with('responsavel')->findOrFail($id);
-        $anoAtual = \App\Models\AnoLetivo::atual();
+        
+        $anoLetivoId = $request->get('ano_letivo_id');
+        if ($anoLetivoId) {
+            $crianca->setOverrideAnoLetivoId($anoLetivoId);
+        } else {
+            $anoAtual = \App\Models\AnoLetivo::atual();
+            $anoLetivoId = $anoAtual ? $anoAtual->id : null;
+        }
 
         $anamnese = \App\Models\Anamnese::where('crianca_id', $id)
-            ->where('ano_letivo_id', $anoAtual ? $anoAtual->id : null)
+            ->where('ano_letivo_id', $anoLetivoId)
             ->firstOrFail();
             
         $dados = $anamnese->dados_json;
 
-        return view('anamnese.show', compact('crianca', 'dados'));
+        return view('anamnese.show', compact('crianca', 'dados', 'anoLetivoId'));
     }
 
     /**
@@ -155,13 +181,20 @@ class AnamneseController extends Controller
     /**
      * Gera o PDF da Anamnese.
      */
-    public function pdf($id)
+    public function pdf(Request $request, $id)
     {
         $crianca = Crianca::with('responsavel')->findOrFail($id);
-        $anoAtual = \App\Models\AnoLetivo::atual();
+        
+        $anoLetivoId = $request->get('ano_letivo_id');
+        if ($anoLetivoId) {
+            $crianca->setOverrideAnoLetivoId($anoLetivoId);
+        } else {
+            $anoAtual = \App\Models\AnoLetivo::atual();
+            $anoLetivoId = $anoAtual ? $anoAtual->id : null;
+        }
 
         $anamnese = \App\Models\Anamnese::where('crianca_id', $id)
-            ->where('ano_letivo_id', $anoAtual ? $anoAtual->id : null)
+            ->where('ano_letivo_id', $anoLetivoId)
             ->firstOrFail();
 
         $dados = $anamnese->dados_json;

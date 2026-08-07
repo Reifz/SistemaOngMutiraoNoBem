@@ -6,7 +6,7 @@
     <style>
         body { font-family: sans-serif; font-size: 10px; color: #333; line-height: 1.2; margin: 0; padding: 0; }
         @page { margin: 1cm; }
-        .header { text-align: center; border-bottom: 2px solid #3f226b; padding-bottom: 5px; margin-bottom: 10px; }
+        .header { text-align: center; border-bottom: 8px solid #3f226b; padding-bottom: 5px; margin-bottom: 10px; }
         .header h1 { font-size: 16px; color: #3f226b; margin: 0; text-transform: uppercase; }
         .header p { margin: 2px 0; font-size: 9px; }
         

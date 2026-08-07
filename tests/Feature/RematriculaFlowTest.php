@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AnoLetivo;
+use App\Models\Anamnese;
 use App\Models\Crianca;
 use App\Models\Matricula;
 use App\Models\Responsavel;
@@ -16,6 +17,12 @@ use Tests\TestCase;
 class RematriculaFlowTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutExceptionHandling();
+    }
 
     public function test_admin_can_start_rematricula_for_next_school_year(): void
     {
@@ -36,13 +43,12 @@ class RematriculaFlowTest extends TestCase
         ]);
         $anoAtual = AnoLetivo::where('ano', 2026)->firstOrFail();
         $anoAtual->update([
-            'data_virada' => '2027-01-01',
-            'status_ativo' => true,
+            'status_ativo' => false,
         ]);
         $anoDestino = AnoLetivo::create([
             'ano' => 2027,
-            'data_virada' => '2027-01-01',
-            'status_ativo' => false,
+            'data_virada' => now()->subDay()->toDateString(),
+            'status_ativo' => true,
         ]);
         $crianca = Crianca::create([
             'responsavel_id' => $responsavel->id,
@@ -93,6 +99,25 @@ class RematriculaFlowTest extends TestCase
             'registro_id' => $crianca->id,
             'tabela_afetada' => 'criancas',
         ]);
+
+        $this->actingAs($admin)
+            ->post(route('rematricula.confirmar_dados', $crianca->id))
+            ->assertRedirect(route('rematricula.index'));
+
+        $this->assertSame(
+            'PENDENTE_REMATRICULA_ANAMNESE',
+            $novaMatricula->fresh()->status
+        );
+
+        $this->actingAs($admin)
+            ->post(route('rematricula.confirmar_anamnese', $crianca->id))
+            ->assertRedirect(route('rematricula.index'));
+
+        $this->assertSame('REMATRICULADA', $novaMatricula->fresh()->status);
+        $this->assertDatabaseHas('anamnese', [
+            'crianca_id' => $crianca->id,
+            'ano_letivo_id' => $anoDestino->id,
+        ]);
     }
 
     public function test_admin_cannot_start_duplicate_rematricula_for_same_year(): void
@@ -105,7 +130,7 @@ class RematriculaFlowTest extends TestCase
         ]);
         $anoDestino = AnoLetivo::create([
             'ano' => 2027,
-            'data_virada' => '2027-01-01',
+            'data_virada' => now()->subDay()->toDateString(),
             'status_ativo' => true,
         ]);
         $crianca = Crianca::create([
@@ -161,13 +186,12 @@ class RematriculaFlowTest extends TestCase
         ]);
         $anoAtual = AnoLetivo::where('ano', 2026)->firstOrFail();
         $anoAtual->update([
-            'data_virada' => '2027-01-01',
-            'status_ativo' => true,
+            'status_ativo' => false,
         ]);
         $anoDestino = AnoLetivo::create([
             'ano' => 2027,
-            'data_virada' => '2027-01-01',
-            'status_ativo' => false,
+            'data_virada' => now()->subDay()->toDateString(),
+            'status_ativo' => true,
         ]);
         $crianca = Crianca::create([
             'responsavel_id' => $responsavel->id,
@@ -199,17 +223,18 @@ class RematriculaFlowTest extends TestCase
             'data_matricula' => '2026-02-01',
         ]);
 
+        Anamnese::create([
+            'crianca_id' => $crianca->id,
+            'ano_letivo_id' => $anoAtual->id,
+            'dados_json' => ['historico_doencas' => 'Sem alteracoes'],
+        ]);
+
         $this->actingAs($admin)
             ->from(route('rematricula.index'))
             ->post(route('rematricula.iniciar', $crianca->id), [
                 'ano_letivo_id' => $anoDestino->id,
             ])
             ->assertRedirect(route('rematricula.index'));
-
-        $this->actingAs($admin)
-            ->from(route('rematricula.anos.index'))
-            ->post(route('rematricula.ano.ativar', $anoDestino->id))
-            ->assertRedirect(route('rematricula.anos.index'));
 
         $crianca->refresh();
         $this->assertSame('PENDENTE_REMATRICULA_MATRICULA', $crianca->status);
@@ -256,16 +281,7 @@ class RematriculaFlowTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('matricula.store', $crianca->id), $matriculaData)
-            ->assertRedirect(route('matricula.index'));
-
-        $crianca->refresh();
-        $this->assertSame('PENDENTE_REMATRICULA_APROVACAO', $crianca->status);
-
-        $this->actingAs($admin)
-            ->post(route('matricula.aprovar', $crianca->id), [
-                'detalhes' => 'Rematricula conferida e aprovada',
-            ])
-            ->assertRedirect(route('matricula.show', $crianca->id));
+            ->assertRedirect(route('anamnese.formulario', $crianca->id));
 
         $crianca->refresh();
         $this->assertSame('PENDENTE_REMATRICULA_ANAMNESE', $crianca->status);
@@ -274,10 +290,18 @@ class RematriculaFlowTest extends TestCase
             ->post(route('anamnese.store', $crianca->id), [
                 'historico_doencas' => 'Sem alteracoes',
             ])
-            ->assertRedirect(route('anamnese.index'));
+            ->assertRedirect(route('rematricula.index'));
 
         $crianca->refresh();
         $this->assertSame('REMATRICULADA', $crianca->status);
+
+        $this->actingAs($admin)
+            ->get(route('matricula.historico', $crianca->id))
+            ->assertOk()
+            ->assertSee('Anamnese 2026')
+            ->assertSee('Anamnese 2027')
+            ->assertSee(route('matricula.show', [$crianca->id, 'ano_letivo_id' => $anoAtual->id]), false)
+            ->assertSee(route('matricula.show', [$crianca->id, 'ano_letivo_id' => $anoDestino->id]), false);
 
         $novaTurma = Turma::create([
             'nome' => 'Turma 2027 A',

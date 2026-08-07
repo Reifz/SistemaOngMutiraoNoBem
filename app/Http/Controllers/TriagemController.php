@@ -39,7 +39,7 @@ class TriagemController extends Controller
         if ($status && $status !== 'TODOS') {
             $query->where('status', $status);
         } else if ($status === 'TODOS') {
-            $query->whereIn('status', ['PREENCHER', 'PENDENTE_MATRICULA', 'REJEITADO']);
+            $query->whereIn('status', ['PREENCHER', 'PENDENTE_MATRICULA', 'REJEITADO', 'DESISTENTE']);
         } else {
             $query->where('status', 'PREENCHER');
         }

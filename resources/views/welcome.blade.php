@@ -43,7 +43,6 @@
                 <div class="bg-multirao-roxo md:w-1/3 p-8 flex flex-col justify-center items-center text-center text-white">
                     <img src="{{ asset('logo.png') }}" alt="Mutirão no Bem" class="w-32 mb-6 invert brightness-0">
                     <h2 class="text-2xl font-bold mb-2">Seja bem-vindo!</h2>
-                    <p class="text-gray-200">Sistema de Gestão de Inscrições e Turmas.</p>
                 </div>
                 <div class="p-8 md:w-2/3 flex flex-col justify-center">
                     <h1 class="text-3xl font-bold text-multirao-roxo mb-4">Mutirão no Bem</h1>

@@ -6,7 +6,7 @@
     <style>
         body { font-family: sans-serif; font-size: 10px; color: #333; line-height: 1.2; margin: 0; padding: 0; }
         @page { margin: 1cm; }
-        .header { text-align: center; border-bottom: 2px solid #3f226b; padding-bottom: 5px; margin-bottom: 10px; }
+        .header { text-align: center; border-bottom: 8px solid #3f226b; padding-bottom: 5px; margin-bottom: 10px; }
         .header h1 { font-size: 16px; color: #3f226b; margin: 0; text-transform: uppercase; }
         .header p { margin: 2px 0; font-size: 9px; }
         
@@ -31,6 +31,7 @@
         .status-EM_TURMA { background: #f5f3ff; color: #5b21b6; }
         .status-REJEITADO { background: #fee2e2; color: #991b1b; }
         .status-EVADIDA { background: #fffbeb; color: #92400e; border: 1px solid #fede30; }
+        .status-DESISTENTE { background: #fffbeb; color: #92400e; border: 1px solid #f59e0b; }
         
         .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 8px; color: #999; border-top: 1px solid #eee; padding-top: 5px; }
     </style>

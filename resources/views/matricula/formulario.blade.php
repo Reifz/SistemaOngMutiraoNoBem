@@ -7,7 +7,6 @@
                     <div class="mb-8 text-center border-b pb-6">
                         <h2 class="text-2xl font-bold text-multirao-roxo mb-2">FICHA DE INSCRIÇÃO/ MATRÍCULA/ DESLIGAMENTO DA CRIANÇA E ADOLESCENTE </h2>
                         <p>Educandário Mutirão no Bem - Cidade Dutra</p>
-                        <p class="text-gray-500 text-sm italic">Este formulário deve ser preenchido pela equipe interna para a matrícula de <b>{{ $crianca->nome }}</b>.</p>
                         <p class="text-xs text-gray-400 mt-2">Protocolo Interno: #{{ str_pad($crianca->id, 6, '0', STR_PAD_LEFT) }}</p>
                     </div>
 
@@ -506,38 +505,43 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">RG ou CNH do Responsável</label>
-                                    <input type="file" name="anexo_rg_responsavel" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
-                                    <p class="text-[10px] text-gray-400 mt-2">Formatos aceitos: PDF, JPG, PNG (Máx 2MB)</p>
+                                    <input type="file" name="anexo_rg_responsavel" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">Formatos aceitos: PDF ou Imagem/Foto (Máx 2MB)</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Certidão de Nascimento da Criança</label>
-                                    <input type="file" name="anexo_certidao" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
-                                    <p class="text-[10px] text-gray-400 mt-2">Documento essencial para aprovação</p>
+                                    <input type="file" name="anexo_certidao" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">Documento essencial para aprovação (PDF ou Foto)</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Ficha de Inscrição Preenchida (Excel)</label>
-                                    <input type="file" name="anexo_excel_matricula" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-green-600 file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_excel_matricula" accept=".xlsx,.xls" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-green-600 file:text-white hover:file:bg-opacity-90">
                                     <p class="text-[10px] text-gray-400 mt-2">Opcional: Anexe o arquivo Excel preenchido</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">RG da Criança</label>
-                                    <input type="file" name="anexo_rg_crianca" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_rg_crianca" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">PDF ou Imagem/Foto</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">CPF da Criança</label>
-                                    <input type="file" name="anexo_cpf_crianca" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_cpf_crianca" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">PDF ou Imagem/Foto</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Comprovante de Residência</label>
-                                    <input type="file" name="anexo_comprovante_residencia" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_comprovante_residencia" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">PDF ou Imagem/Foto</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Comprovante de Escolaridade</label>
-                                    <input type="file" name="anexo_comprovante_escolaridade" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_comprovante_escolaridade" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">PDF ou Imagem/Foto</p>
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Comprovante de Renda</label>
-                                    <input type="file" name="anexo_comprovante_renda" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_comprovante_renda" accept="application/pdf,image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <p class="text-[10px] text-gray-400 mt-2">PDF ou Imagem/Foto</p>
                                 </div>
                             </div>
                         </div>
@@ -557,6 +561,7 @@
             </div>
         </div>
     </div>
+    <x-file-selection-feedback />
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let familiarIndex = 1;

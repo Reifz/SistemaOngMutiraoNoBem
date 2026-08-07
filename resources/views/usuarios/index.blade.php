@@ -6,7 +6,6 @@
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-xl font-bold text-multirao-roxo uppercase">Gestão de Usuários</h2>
-                        <p class="text-sm text-gray-500">Controle de acesso e níveis de permissão (RBAC)</p>
                     </div>
                     <a href="{{ route('usuarios.create') }}" class="bg-multirao-roxo text-white font-bold py-2 px-6 rounded-md shadow hover:bg-opacity-90 transition flex items-center uppercase text-sm">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>

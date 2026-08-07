@@ -6,7 +6,6 @@
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-xl font-bold text-multirao-roxo uppercase">Novo Usuário</h2>
-                        <p class="text-sm text-gray-500">Cadastre um novo colaborador no sistema</p>
                     </div>
                     <a href="{{ route('usuarios.index') }}" class="text-multirao-roxo font-bold hover:underline uppercase text-sm flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -51,8 +50,13 @@
                     <div>
                         <x-input-label for="role" :value="__('Nível de Acesso')" class="text-multirao-roxo font-bold uppercase text-xs" />
                         <select id="role" name="role" class="block mt-1 w-full border-gray-300 focus:border-multirao-roxo focus:ring-multirao-roxo rounded-md shadow-sm">
-                            <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>USUÁRIO (Acesso padrão)</option>
-                            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>ADMINISTRADOR (Gestão total)</option>
+                            <option value="user" {{ old('role', 'user') == 'user' ? 'selected' : '' }}>SEM ACESSO A DADOS SENSÍVEIS</option>
+                            <option value="triagem" {{ old('role') == 'triagem' ? 'selected' : '' }}>TRIAGEM</option>
+                            <option value="matricula" {{ old('role') == 'matricula' ? 'selected' : '' }}>MATRÍCULA E DOCUMENTOS</option>
+                            <option value="saude" {{ old('role') == 'saude' ? 'selected' : '' }}>SAÚDE E ANAMNESE</option>
+                            <option value="educador" {{ old('role') == 'educador' ? 'selected' : '' }}>EDUCADOR E TURMAS</option>
+                            <option value="auditor" {{ old('role') == 'auditor' ? 'selected' : '' }}>AUDITORIA E RELATÓRIOS</option>
+                            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>ADMINISTRADOR</option>
                         </select>
                         <x-input-error :messages="$errors->get('role')" class="mt-2" />
                     </div>

@@ -13,11 +13,72 @@ use App\Models\Mensagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MatriculaController extends Controller
 {
+    private const DOCUMENT_RULE = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
+
+    private function validateAttachments(Request $request): void
+    {
+        $request->validate([
+            'anexo_rg_responsavel' => self::DOCUMENT_RULE,
+            'anexo_certidao' => self::DOCUMENT_RULE,
+            'anexo_rg_crianca' => self::DOCUMENT_RULE,
+            'anexo_cpf_crianca' => self::DOCUMENT_RULE,
+            'anexo_comprovante_residencia' => self::DOCUMENT_RULE,
+            'anexo_comprovante_escolaridade' => self::DOCUMENT_RULE,
+            'anexo_comprovante_renda' => self::DOCUMENT_RULE,
+            'anexo_excel_matricula' => 'nullable|file|mimes:xls,xlsx|max:5120',
+        ]);
+    }
+
+    private function deleteStoredAttachment(?string $path): void
+    {
+        if (!$path) {
+            return;
+        }
+
+        Storage::disk('local')->delete($path);
+        // Remove também eventual cópia legada pública durante a transição.
+        Storage::disk('public')->delete($path);
+    }
+
+    /**
+     * Retorna os requisitos que ainda impedem a aprovação da matrícula.
+     */
+    private function pendingApprovalRequirements(Crianca $crianca): array
+    {
+        $pending = [];
+        $responsavel = $crianca->responsavel;
+
+        $hasChildDocument = $crianca->anexo_certidao
+            || $crianca->anexo_rg
+            || $crianca->anexo_cpf;
+
+        if (!$hasChildDocument) {
+            $pending[] = 'pelo menos 1 documento da criança (CPF, RG ou certidão)';
+        }
+
+        $hasGuardianDocument = $responsavel && $responsavel->anexo_rg;
+
+        if (!$hasGuardianDocument) {
+            $pending[] = 'pelo menos 1 documento do responsável (CPF, RG ou CNH)';
+        }
+
+        if (!$crianca->moradia) {
+            $pending[] = 'dados de moradia';
+        }
+
+        if ($crianca->familiares->isEmpty()) {
+            $pending[] = 'composição familiar';
+        }
+
+        return $pending;
+    }
+
     /**
      * Lista as matrículas em andamento ou para aprovação.
      */
@@ -52,9 +113,12 @@ class MatriculaController extends Controller
                 'PENDENTE_REMATRICULA_MATRICULA', 
                 'PENDENTE_APROVACAO', 
                 'PENDENTE_REMATRICULA_APROVACAO', 
+                'PENDENTE_REMATRICULA_ANAMNESE',
+                'REMATRICULADA',
                 'APROVADA', 
                 'EM_TURMA', 
-                'EVADIDA'
+                'EVADIDA',
+                'DESISTENTE'
             ]);
         }
 
@@ -79,10 +143,10 @@ class MatriculaController extends Controller
     public function formulario($id)
     {
         $crianca = Crianca::with('responsavel')->findOrFail($id);
-        if ($crianca->status !== 'PENDENTE_MATRICULA' && $crianca->status !== 'PENDENTE_REMATRICULA_MATRICULA') {
-            return redirect()->route('matricula.index')->with('error', 'Esta criança não está em fase de preenchimento.');
+        if ($crianca->status !== "PENDENTE_MATRICULA" && $crianca->status !== "PENDENTE_REMATRICULA_MATRICULA") {
+            return redirect()->route("matricula.edit", $id);
         }
-        return view('matricula.formulario', compact('crianca'));
+        return view("matricula.formulario", compact("crianca"));
     }
 
     /**
@@ -90,16 +154,15 @@ class MatriculaController extends Controller
      */
     public function store(Request $request, $id)
     {
+        $this->validateAttachments($request);
         DB::beginTransaction();
         try {
             $crianca = Crianca::with('responsavel')->findOrFail($id);
 
-            // Determinar o próximo status baseado no atual
             $proximoStatus = ($crianca->status === 'PENDENTE_REMATRICULA_MATRICULA') 
-                ? 'PENDENTE_REMATRICULA_APROVACAO' 
+                ? 'PENDENTE_REMATRICULA_ANAMNESE' 
                 : 'PENDENTE_APROVACAO';
 
-            // 1. ATUALIZAR CRIANÇA
             $crianca->update([
                 'nome' => $request->crianca_nome,
                 'idade' => $request->crianca_idade,
@@ -115,6 +178,7 @@ class MatriculaController extends Controller
                 'tipo_escola' => $request->crianca_tipo_escola,
                 'serie' => $request->crianca_serie,
                 'periodo_escolar' => $request->crianca_periodo_escolar,
+                'periodo_ong' => $request->crianca_periodo_ong,
                 'certidao_nascimento' => $request->crianca_certidao_nascimento,
                 'certidao_folha' => $request->crianca_certidao_folha,
                 'certidao_livro' => $request->crianca_certidao_livro,
@@ -125,7 +189,6 @@ class MatriculaController extends Controller
                 'status' => $proximoStatus,
             ]);
 
-            // Sincronizar com tabela Matriculas (Fase 6)
             $anoAtual = \App\Models\AnoLetivo::atual();
             if ($anoAtual) {
                 \App\Models\Matricula::updateOrCreate(
@@ -135,13 +198,13 @@ class MatriculaController extends Controller
                         'tipo_escola' => $request->crianca_tipo_escola,
                         'serie' => $request->crianca_serie,
                         'periodo_escolar' => $request->crianca_periodo_escolar,
+                        'periodo_ong' => $request->crianca_periodo_ong,
                         'status' => $proximoStatus,
                         'data_matricula' => $request->crianca_data_matricula,
                     ]
                 );
             }
 
-            // 2. TRATAR MÃE (Se preenchido)
             if ($request->mae_nome) {
                 $mae = Responsavel::updateOrCreate(
                     ['nome' => $request->mae_nome], 
@@ -160,7 +223,6 @@ class MatriculaController extends Controller
                 );
             }
 
-            // 3. TRATAR PAI (Se preenchido)
             if ($request->pai_nome) {
                 $pai = Responsavel::updateOrCreate(
                     ['nome' => $request->pai_nome],
@@ -179,7 +241,6 @@ class MatriculaController extends Controller
                 );
             }
 
-            // 4. ATUALIZAR RESPONSÁVEL PRINCIPAL (Com quem mora)
             $responsavelPrincipal = $crianca->responsavel;
             $responsavelPrincipal->update([
                 'nome' => $request->responsavel_nome,
@@ -195,13 +256,11 @@ class MatriculaController extends Controller
                 'recebe_bpc' => $request->has('responsavel_recebe_bpc'),
             ]);
 
-            // Vincular como principal na pivot se ainda não estiver
             CriancaResponsavel::updateOrCreate(
                 ['crianca_id' => $crianca->id, 'responsavel_id' => $responsavelPrincipal->id],
                 ['parentesco' => $request->responsavel_parentesco, 'principal' => true]
             );
 
-            // 5. TRATAR CONTATOS DO RESPONSÁVEL
             $tiposContatos = [
                 'contato_celular' => 'CELULAR',
                 'contato_residencia' => 'RESIDENCIA',
@@ -220,7 +279,6 @@ class MatriculaController extends Controller
                 }
             }
 
-            // 6. TRATAR MORADIA
             Moradia::updateOrCreate(
                 ['crianca_id' => $crianca->id],
                 [
@@ -236,7 +294,6 @@ class MatriculaController extends Controller
                 ]
             );
 
-            // 7. TRATAR FAMILIARES (Processar múltiplos familiares)
             if ($request->has('familiares') && is_array($request->familiares)) {
                 foreach ($request->familiares as $fData) {
                     if (!empty($fData['nome'])) {
@@ -270,37 +327,36 @@ class MatriculaController extends Controller
                 ]);
             }
 
-            // 8. TRATAR ANEXOS
             if ($request->hasFile('anexo_rg_responsavel')) {
-                $path = $request->file('anexo_rg_responsavel')->store('anexos/responsaveis', 'public');
+                $path = $request->file('anexo_rg_responsavel')->store('anexos/responsaveis', 'local');
                 $responsavelPrincipal->update(['anexo_rg' => $path]);
             }
             if ($request->hasFile('anexo_certidao')) {
-                $path = $request->file('anexo_certidao')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_certidao')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_certidao' => $path]);
             }
             if ($request->hasFile('anexo_excel_matricula')) {
-                $path = $request->file('anexo_excel_matricula')->store('anexos/criancas/excel', 'public');
+                $path = $request->file('anexo_excel_matricula')->store('anexos/criancas/excel', 'local');
                 $crianca->update(['anexo_excel_matricula' => $path]);
             }
             if ($request->hasFile('anexo_rg_crianca')) {
-                $path = $request->file('anexo_rg_crianca')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_rg_crianca')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_rg' => $path]);
             }
             if ($request->hasFile('anexo_cpf_crianca')) {
-                $path = $request->file('anexo_cpf_crianca')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_cpf_crianca')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_cpf' => $path]);
             }
             if ($request->hasFile('anexo_comprovante_residencia')) {
-                $path = $request->file('anexo_comprovante_residencia')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_comprovante_residencia')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_comprovante_residencia' => $path]);
             }
             if ($request->hasFile('anexo_comprovante_escolaridade')) {
-                $path = $request->file('anexo_comprovante_escolaridade')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_comprovante_escolaridade')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_comprovante_escolaridade' => $path]);
             }
             if ($request->hasFile('anexo_comprovante_renda')) {
-                $path = $request->file('anexo_comprovante_renda')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_comprovante_renda')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_comprovante_renda' => $path]);
             }
 
@@ -316,43 +372,80 @@ class MatriculaController extends Controller
 
             DB::commit();
  
+            if ($proximoStatus === 'PENDENTE_REMATRICULA_ANAMNESE') {
+                return redirect()->route('anamnese.formulario', $crianca->id)->with('success', 'Dados de matrícula de ' . $crianca->nome . ' atualizados com sucesso! Prossiga com a Anamnese.');
+            }
+
             return redirect()->route('matricula.index')->with('success', 'Matrícula completa enviada para aprovação final!');
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Erro ao salvar matrícula: ' . $e->getMessage());
-            return back()->with('error', 'Erro ao salvar matrícula: ' . $e->getMessage())->withInput();
+            return back()->with('error', 'Não foi possível salvar a matrícula. Tente novamente.')->withInput();
         }
     }
 
     /**
      * Visualiza os dados da matrícula (Ponto 3).
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $crianca = Crianca::with([
             'responsavel.contatos', 
             'moradia', 
             'familiares', 
+            'turma',
             'responsaveis', // Mãe e Pai via pivot
             'logsAuditoria.usuario'
         ])->findOrFail($id);
+
+        $anoLetivoId = $request->get('ano_letivo_id');
+        if ($anoLetivoId) {
+            $crianca->setOverrideAnoLetivoId($anoLetivoId);
+        }
 
         $mensagens = Mensagem::with('remetente', 'destinatario')
             ->where('crianca_id', $id)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        $pendenciasAprovacao = $this->pendingApprovalRequirements($crianca);
+        $podeAprovar = in_array($crianca->status, [
+            'PENDENTE_APROVACAO',
+            'PENDENTE_REMATRICULA_APROVACAO',
+        ], true) && $pendenciasAprovacao === [];
         
-        return view('matricula.show', compact('crianca', 'mensagens'));
+        return view('matricula.show', compact(
+            'crianca',
+            'mensagens',
+            'anoLetivoId',
+            'pendenciasAprovacao',
+            'podeAprovar'
+        ));
     }
 
     /**
      * Exibe o histórico completo de logs da criança.
      */
-    public function historico($id)
+    public function historico(Request $request, $id)
     {
-        $crianca = Crianca::with(['logsAuditoria.usuario', 'anamnese'])->findOrFail($id);
-        return view('matricula.historico', compact('crianca'));
+        $crianca = Crianca::with(['matriculas.anoLetivo', 'anamneses.anoLetivo'])->findOrFail($id);
+        $data_inicio = $request->input('data_inicio');
+        $data_fim = $request->input('data_fim');
+
+        $logsAuditoria = $crianca->logsAuditoria()->with('usuario');
+
+        if ($data_inicio) {
+            $logsAuditoria->whereDate('data_hora', '>=', $data_inicio);
+        }
+
+        if ($data_fim) {
+            $logsAuditoria->whereDate('data_hora', '<=', $data_fim);
+        }
+
+        $logsAuditoria = $logsAuditoria->orderByDesc('data_hora')->get();
+
+        return view('matricula.historico', compact('crianca', 'logsAuditoria', 'data_inicio', 'data_fim'));
     }
 
     /**
@@ -369,11 +462,11 @@ class MatriculaController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $this->validateAttachments($request);
         DB::beginTransaction();
         try {
             $crianca = Crianca::with(['responsavel', 'responsaveis', 'moradia', 'familiares'])->findOrFail($id);
 
-            // 1. ATUALIZAR CRIANÇA
             $crianca->update([
                 'nome' => $request->crianca_nome,
                 'idade' => $request->crianca_idade,
@@ -389,6 +482,7 @@ class MatriculaController extends Controller
                 'tipo_escola' => $request->crianca_tipo_escola,
                 'serie' => $request->crianca_serie,
                 'periodo_escolar' => $request->crianca_periodo_escolar,
+                'periodo_ong' => $request->crianca_periodo_ong,
                 'certidao_nascimento' => $request->crianca_certidao_nascimento,
                 'certidao_folha' => $request->crianca_certidao_folha,
                 'certidao_livro' => $request->crianca_certidao_livro,
@@ -398,7 +492,6 @@ class MatriculaController extends Controller
                 'naturalidade' => $request->crianca_naturalidade,
             ]);
 
-            // Sincronizar com tabela Matriculas (Fase 6)
             $anoAtual = \App\Models\AnoLetivo::atual();
             if ($anoAtual) {
                 \App\Models\Matricula::updateOrCreate(
@@ -408,12 +501,12 @@ class MatriculaController extends Controller
                         'tipo_escola' => $request->crianca_tipo_escola,
                         'serie' => $request->crianca_serie,
                         'periodo_escolar' => $request->crianca_periodo_escolar,
+                        'periodo_ong' => $request->crianca_periodo_ong,
                         'data_matricula' => $request->crianca_data_matricula,
                     ]
                 );
             }
 
-            // 2. TRATAR MÃE
             if ($request->mae_nome) {
                 $mae = Responsavel::updateOrCreate(
                     ['nome' => $request->mae_nome],
@@ -432,7 +525,6 @@ class MatriculaController extends Controller
                 );
             }
 
-            // 3. TRATAR PAI
             if ($request->pai_nome) {
                 $pai = Responsavel::updateOrCreate(
                     ['nome' => $request->pai_nome],
@@ -451,7 +543,6 @@ class MatriculaController extends Controller
                 );
             }
 
-            // 4. ATUALIZAR RESPONSÁVEL PRINCIPAL
             $responsavelPrincipal = $crianca->responsavel;
             $responsavelPrincipal->update([
                 'nome' => $request->responsavel_nome,
@@ -467,7 +558,6 @@ class MatriculaController extends Controller
                 'recebe_bpc' => $request->has('responsavel_recebe_bpc'),
             ]);
 
-            // 5. ATUALIZAR CONTATOS
             if ($request->hasAny(['contato_celular', 'contato_residencia', 'contato_trabalho'])) {
                 $responsavelPrincipal->contatos()->delete(); // Limpa e insere novos apenas se vierem dados
                 $tiposContatos = [
@@ -491,7 +581,6 @@ class MatriculaController extends Controller
                 }
             }
 
-            // 6. ATUALIZAR MORADIA
             if ($request->has('moradia_endereco')) {
                 Moradia::updateOrCreate(
                     ['crianca_id' => $crianca->id],
@@ -509,7 +598,6 @@ class MatriculaController extends Controller
                 );
             }
 
-            // 7. ATUALIZAR FAMILIARES
             if ($request->has('familiares') && is_array($request->familiares)) {
                 $crianca->familiares()->delete(); // Limpa apenas se vier o array (garante que o usuário quer atualizar a lista)
                 foreach ($request->familiares as $fData) {
@@ -544,64 +632,63 @@ class MatriculaController extends Controller
                 ]);
             }
 
-            // 8. TRATAR ANEXOS (Se enviados novos)
             if ($request->hasFile('anexo_rg_responsavel')) {
                 // Remover antigo se existir
                 if ($responsavelPrincipal->anexo_rg) {
-                    Storage::disk('public')->delete($responsavelPrincipal->anexo_rg);
+                    $this->deleteStoredAttachment($responsavelPrincipal->anexo_rg);
                 }
-                $path = $request->file('anexo_rg_responsavel')->store('anexos/responsaveis', 'public');
+                $path = $request->file('anexo_rg_responsavel')->store('anexos/responsaveis', 'local');
                 $responsavelPrincipal->update(['anexo_rg' => $path]);
             }
             if ($request->hasFile('anexo_certidao')) {
                 // Remover antigo se existir
                 if ($crianca->anexo_certidao) {
-                    Storage::disk('public')->delete($crianca->anexo_certidao);
+                    $this->deleteStoredAttachment($crianca->anexo_certidao);
                 }
-                $path = $request->file('anexo_certidao')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_certidao')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_certidao' => $path]);
             }
             if ($request->hasFile('anexo_excel_matricula')) {
                 // Remover antigo se existir
                 if ($crianca->anexo_excel_matricula) {
-                    Storage::disk('public')->delete($crianca->anexo_excel_matricula);
+                    $this->deleteStoredAttachment($crianca->anexo_excel_matricula);
                 }
-                $path = $request->file('anexo_excel_matricula')->store('anexos/criancas/excel', 'public');
+                $path = $request->file('anexo_excel_matricula')->store('anexos/criancas/excel', 'local');
                 $crianca->update(['anexo_excel_matricula' => $path]);
             }
             if ($request->hasFile('anexo_rg_crianca')) {
                 if ($crianca->anexo_rg) {
-                    Storage::disk('public')->delete($crianca->anexo_rg);
+                    $this->deleteStoredAttachment($crianca->anexo_rg);
                 }
-                $path = $request->file('anexo_rg_crianca')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_rg_crianca')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_rg' => $path]);
             }
             if ($request->hasFile('anexo_cpf_crianca')) {
                 if ($crianca->anexo_cpf) {
-                    Storage::disk('public')->delete($crianca->anexo_cpf);
+                    $this->deleteStoredAttachment($crianca->anexo_cpf);
                 }
-                $path = $request->file('anexo_cpf_crianca')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_cpf_crianca')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_cpf' => $path]);
             }
             if ($request->hasFile('anexo_comprovante_residencia')) {
                 if ($crianca->anexo_comprovante_residencia) {
-                    Storage::disk('public')->delete($crianca->anexo_comprovante_residencia);
+                    $this->deleteStoredAttachment($crianca->anexo_comprovante_residencia);
                 }
-                $path = $request->file('anexo_comprovante_residencia')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_comprovante_residencia')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_comprovante_residencia' => $path]);
             }
             if ($request->hasFile('anexo_comprovante_escolaridade')) {
                 if ($crianca->anexo_comprovante_escolaridade) {
-                    Storage::disk('public')->delete($crianca->anexo_comprovante_escolaridade);
+                    $this->deleteStoredAttachment($crianca->anexo_comprovante_escolaridade);
                 }
-                $path = $request->file('anexo_comprovante_escolaridade')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_comprovante_escolaridade')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_comprovante_escolaridade' => $path]);
             }
             if ($request->hasFile('anexo_comprovante_renda')) {
                 if ($crianca->anexo_comprovante_renda) {
-                    Storage::disk('public')->delete($crianca->anexo_comprovante_renda);
+                    $this->deleteStoredAttachment($crianca->anexo_comprovante_renda);
                 }
-                $path = $request->file('anexo_comprovante_renda')->store('anexos/criancas', 'public');
+                $path = $request->file('anexo_comprovante_renda')->store('anexos/criancas', 'local');
                 $crianca->update(['anexo_comprovante_renda' => $path]);
             }
 
@@ -619,7 +706,8 @@ class MatriculaController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Erro ao atualizar: ' . $e->getMessage())->withInput();
+            Log::error('Erro ao atualizar matrícula.', ['exception' => $e]);
+            return back()->with('error', 'Não foi possível atualizar a matrícula. Tente novamente.')->withInput();
         }
     }
 
@@ -628,18 +716,30 @@ class MatriculaController extends Controller
      */
     public function aprovar(Request $request, $id)
     {
-        $crianca = Crianca::findOrFail($id);
+        $crianca = Crianca::with(['responsavel', 'moradia', 'familiares'])->findOrFail($id);
+
+        if (!in_array($crianca->status, [
+            'PENDENTE_APROVACAO',
+            'PENDENTE_REMATRICULA_APROVACAO',
+        ], true)) {
+            return back()->with('error', 'Esta matrícula não está aguardando aprovação.');
+        }
+
+        $pendenciasAprovacao = $this->pendingApprovalRequirements($crianca);
+        if ($pendenciasAprovacao !== []) {
+            return back()->with(
+                'error',
+                'A matrícula não pode ser aprovada. Pendências: ' . implode(', ', $pendenciasAprovacao) . '.'
+            );
+        }
         
-        // Determinar o próximo status baseado no atual
         $proximoStatus = ($crianca->status === 'PENDENTE_REMATRICULA_APROVACAO') 
             ? 'PENDENTE_REMATRICULA_ANAMNESE' 
             : 'APROVADA';
 
-        // Atualiza status na tabela de crianças
         $crianca->status = $proximoStatus;
         $crianca->save();
 
-        // Sincronizar com tabela Matriculas (Fase 6)
         $anoAtual = \App\Models\AnoLetivo::atual();
         if ($anoAtual) {
             \App\Models\Matricula::updateOrCreate(
@@ -648,7 +748,6 @@ class MatriculaController extends Controller
             );
         }
 
-        // Sincroniza status na tabela de inscrições se existir
         if ($crianca->inscricao) {
             $crianca->inscricao->update(['status' => 'APROVADA']);
         }
@@ -680,7 +779,6 @@ class MatriculaController extends Controller
         $statusAnterior = $crianca->status;
         $turmaAnterior = $crianca->turma ? $crianca->turma->nome : 'Nenhuma';
 
-        // Atualiza a criança
         $crianca->update([
             'status' => 'EVADIDA',
             'turma_id' => null, // Remove da turma atual
@@ -689,7 +787,6 @@ class MatriculaController extends Controller
             'observacao_evasao' => $request->observacao_evasao,
         ]);
 
-        // Sincronizar com tabela Matriculas (Fase 6)
         $anoAtual = \App\Models\AnoLetivo::atual();
         if ($anoAtual) {
             \App\Models\Matricula::updateOrCreate(
@@ -704,7 +801,6 @@ class MatriculaController extends Controller
             );
         }
 
-        // Sincroniza status na tabela de inscrições se existir
         if ($crianca->inscricao) {
             $crianca->inscricao->update(['status' => 'EVADIDA']);
         }
@@ -722,12 +818,78 @@ class MatriculaController extends Controller
     }
 
     /**
+     * Registra a desistência da criança em qualquer etapa do fluxo.
+     */
+    public function desistir(Request $request, $id)
+    {
+        $request->validate([
+            'data_desistencia' => 'required|date',
+            'motivo_desistencia' => 'required|string',
+        ]);
+
+        $crianca = Crianca::findOrFail($id);
+        $statusAnterior = $crianca->status;
+        $turmaAnterior = $crianca->turma ? $crianca->turma->nome : 'Nenhuma';
+
+        $crianca->update([
+            'status' => 'DESISTENTE',
+            'turma_id' => null,
+            'data_desligamento' => $request->data_desistencia,
+            'motivo_desligamento' => $request->motivo_desistencia,
+        ]);
+
+        $anoAtual = \App\Models\AnoLetivo::atual();
+        if ($anoAtual) {
+            \App\Models\Matricula::updateOrCreate(
+                ['crianca_id' => $crianca->id, 'ano_letivo_id' => $anoAtual->id],
+                [
+                    'status' => 'DESISTENTE',
+                    'turma_id' => null,
+                    'data_desligamento' => $request->data_desistencia,
+                    'motivo_desligamento' => $request->motivo_desistencia,
+                ]
+            );
+        }
+
+        if ($crianca->inscricao) {
+            $crianca->inscricao->update(['status' => 'DESISTENTE']);
+        }
+
+        LogAuditoria::create([
+            'usuario_id' => Auth::id(),
+            'acao' => "Desligamento: Registro de Desistência",
+            'tabela_afetada' => 'criancas',
+            'registro_id' => $crianca->id,
+            'detalhes' => "Desistência registrada. Status anterior: {$statusAnterior}. Turma anterior: {$turmaAnterior}. Motivo: {$request->motivo_desistencia}",
+            'data_hora' => now()
+        ]);
+
+        return redirect()->back()->with('success', "Desistência de {$crianca->nome} registrada com sucesso.");
+    }
+
+    /**
      * Gera o PDF completo (Ponto 4 & 5).
      */
-    public function pdf($id)
+    public function pdf(Request $request, $id)
     {
         $crianca = Crianca::with(['responsavel.contatos', 'responsaveis', 'moradia', 'familiares', 'logsAuditoria.usuario'])->findOrFail($id);
-        $pdf = Pdf::loadView('pdf.matricula_completa', compact('crianca'));
+
+        $anoLetivoId = $request->get('ano_letivo_id');
+        if ($anoLetivoId) {
+            $crianca->setOverrideAnoLetivoId($anoLetivoId);
+        }
+
+        $pdf = Pdf::loadView('pdf.matricula_completa', compact('crianca', 'anoLetivoId'));
+
+        LogAuditoria::create([
+            'usuario_id' => Auth::id(),
+            'acao' => 'Matrícula: Exportou PDF completo',
+            'tabela_afetada' => 'criancas',
+            'registro_id' => $crianca->id,
+            'detalhes' => 'Exportação de ficha completa em PDF.',
+            'data_hora' => now(),
+        ]);
+
         return $pdf->download("matricula_{$crianca->nome}.pdf");
     }
 

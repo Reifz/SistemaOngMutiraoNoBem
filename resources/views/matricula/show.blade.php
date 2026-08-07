@@ -20,29 +20,10 @@
                 <div class="mb-8 text-center border-b pb-6 flex justify-between items-center">
                     <div class="text-left">
                         <h2 class="text-2xl font-bold text-multirao-roxo mb-2">Visualização de Matrícula</h2>
-                        <p class="text-gray-500 text-sm italic">Dados consolidados de <b>{{ $crianca->nome }}</b>.</p>
                         <p class="text-xs text-gray-400">Protocolo Interno: #{{ str_pad($crianca->id, 6, '0', STR_PAD_LEFT) }}</p>
                     </div>
                     <div class="flex gap-3">
-                        @if(in_array($crianca->status, ['PENDENTE_MATRICULA', 'PENDENTE_APROVACAO']))
-                            @php
-                                $camposFaltando = [];
-                                
-                                // Nova Regra (Item 5): Pelo menos um documento da criança
-                                $temDocCrianca = $crianca->cpf || $crianca->rg || $crianca->anexo_certidao || $crianca->anexo_rg || $crianca->anexo_cpf;
-                                if (!$temDocCrianca) $camposFaltando[] = 'Pelo menos 1 documento da criança (CPF, RG ou Certidão)';
-
-                                // Nova Regra (Item 5): Pelo menos um documento do responsável
-                                $temDocResponsavel = $crianca->responsavel->cpf || $crianca->responsavel->rg || $crianca->responsavel->anexo_rg;
-                                if (!$temDocResponsavel) $camposFaltando[] = 'Pelo menos 1 documento do responsável (CPF, RG ou CNH)';
-
-                                // Dados obrigatórios que não são "documentos" ID
-                                if (!$crianca->moradia) $camposFaltando[] = 'Dados de Moradia';
-                                if ($crianca->familiares->count() === 0) $camposFaltando[] = 'Composição Familiar';
-                                
-                                $podeAprovar = count($camposFaltando) === 0;
-                            @endphp
-
+                        @if(in_array($crianca->status, ['PENDENTE_MATRICULA', 'PENDENTE_APROVACAO', 'PENDENTE_REMATRICULA_APROVACAO']))
                             @if($podeAprovar)
                                 <form action="{{ route('matricula.aprovar', $crianca->id) }}" method="POST" onsubmit="return confirm('Confirmar aprovação desta matrícula?')">
                                     @csrf
@@ -52,10 +33,9 @@
                                     </button>
                                 </form>
                             @else
-                                <button type="button" disabled title="Campos pendentes: {{ implode(', ', $camposFaltando) }}" class="bg-gray-400 text-white font-bold py-2 px-4 rounded shadow cursor-not-allowed uppercase text-xs flex items-center">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                    Aprovação Bloqueada (Dados Incompletos)
-                                </button>
+                                <span title="Pendências: {{ implode(', ', $pendenciasAprovacao) }}" class="bg-amber-50 border border-amber-200 text-amber-800 font-bold py-2 px-4 rounded text-xs">
+                                    Aprovação indisponível: dados ou documentos pendentes
+                                </span>
                             @endif
                         @elseif(in_array($crianca->status, ['APROVADA', 'ANAMNESE_CONCLUIDA', 'EM_TURMA']))
                             <span class="bg-green-100 text-green-800 font-bold py-2 px-4 rounded border border-green-200 uppercase text-xs flex items-center">
@@ -64,10 +44,16 @@
                             </span>
                         @endif
 
-                        <a href="{{ route('matricula.pdf', $crianca->id) }}" target="_blank" class="bg-multirao-amarelo text-multirao-roxo font-bold py-2 px-4 rounded shadow-sm hover:bg-opacity-90 transition uppercase text-xs flex items-center">
+                        <a href="{{ route('matricula.pdf', [$crianca->id, 'ano_letivo_id' => $anoLetivoId]) }}" target="_blank" class="bg-multirao-amarelo text-multirao-roxo font-bold py-2 px-4 rounded shadow-sm hover:bg-opacity-90 transition uppercase text-xs flex items-center">
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"></path></svg>
                             PDF
                         </a>
+
+                        @if(!in_array($crianca->status, ['EVADIDA', 'DESISTENTE']))
+                            <button type="button" onclick="openDesistenciaModal({{ $crianca->id }})" class="bg-amber-500 text-white font-bold py-2 px-4 rounded shadow hover:bg-amber-600 transition uppercase text-xs flex items-center">
+                                Registrar Desist&ecirc;ncia
+                            </button>
+                        @endif
 
                         @if(in_array($crianca->status, ['APROVADA', 'ANAMNESE_CONCLUIDA', 'EM_TURMA']))
                             <button type="button" onclick="openEvasaoModal()" class="bg-red-600 text-white font-bold py-2 px-4 rounded shadow hover:bg-red-700 transition uppercase text-xs flex items-center">
@@ -76,7 +62,7 @@
                             </button>
                         @endif
 
-                        @if(in_array($crianca->status, ['PENDENTE_MATRICULA', 'PENDENTE_APROVACAO']))
+                        @if(!in_array($crianca->status, ['EVADIDA', 'DESISTENTE']))
                             <a href="{{ route('matricula.edit', $crianca->id) }}" class="bg-amber-500 text-white font-bold py-2 px-4 rounded shadow hover:bg-amber-600 transition uppercase text-xs flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 Editar
@@ -153,6 +139,17 @@
                             <label class="block text-xs font-bold text-multirao-roxo uppercase mb-1">Período Desejado (ONG)</label>
                             <p class="p-2 bg-gray-50 rounded border font-bold">{{ $crianca->periodo_ong ?? 'Não informado' }}</p>
                         </div>
+
+                        @if($crianca->turma)
+                            @php
+                                $turnoManha = stripos($crianca->turma->turno ?? '', 'manh') !== false;
+                                $turnoBadge = $turnoManha ? 'bg-yellow-200 text-yellow-950 border-yellow-500' : 'bg-blue-200 text-blue-950 border-blue-600';
+                            @endphp
+                            <div>
+                                <label class="block text-xs font-bold text-multirao-roxo uppercase mb-1">Turma Atual</label>
+                                <p class="p-2 rounded border font-bold {{ $turnoBadge }}">{{ $crianca->turma->nome }} - {{ $crianca->turma->turno }}</p>
+                            </div>
+                        @endif
 
                         <div>
                             <label class="block text-xs font-bold text-multirao-roxo uppercase mb-1">CPF</label>
@@ -413,7 +410,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->responsavel->anexo_rg) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'responsavel', 'id' => $crianca->responsavel->id, 'campo' => 'anexo_rg']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -428,7 +425,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->anexo_certidao) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'crianca', 'id' => $crianca->id, 'campo' => 'anexo_certidao']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -460,7 +457,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->anexo_rg) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'crianca', 'id' => $crianca->id, 'campo' => 'anexo_rg']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -475,7 +472,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->anexo_cpf) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'crianca', 'id' => $crianca->id, 'campo' => 'anexo_cpf']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -490,7 +487,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->anexo_comprovante_residencia) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'crianca', 'id' => $crianca->id, 'campo' => 'anexo_comprovante_residencia']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -505,7 +502,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->anexo_comprovante_escolaridade) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'crianca', 'id' => $crianca->id, 'campo' => 'anexo_comprovante_escolaridade']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -520,7 +517,7 @@
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                         Arquivo Carregado
                                     </span>
-                                    <a href="{{ asset('storage/' . $crianca->anexo_comprovante_renda) }}" target="_blank" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
+                                    <a href="{{ route('anexos.show', ['tipo' => 'crianca', 'id' => $crianca->id, 'campo' => 'anexo_comprovante_renda']) }}" target="_blank" rel="noopener" class="bg-multirao-roxo text-white text-[10px] px-3 py-1 rounded hover:bg-opacity-90 font-bold uppercase">Visualizar</a>
                                 </div>
                             @else
                                 <span class="text-xs text-red-500 italic">Nenhum arquivo enviado.</span>
@@ -576,6 +573,8 @@
     </div>
     </div>
 
+    <x-desistencia-modal :crianca="$crianca" />
+
     <!-- Modal de Registro de Evasão -->
     <div id="evasaoModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -608,6 +607,7 @@
                                             <option value="Inadaptação">Inadaptação</option>
                                             <option value="Falta de Interesse">Falta de Interesse</option>
                                             <option value="Problemas Familiares">Problemas Familiares</option>
+                                            <option value="Dificuldade de deslocamento">Dificuldade de deslocamento</option>
                                             <option value="Conclusão do Ciclo">Conclusão do Ciclo</option>
                                             <option value="Outros">Outros</option>
                                         </select>

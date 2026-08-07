@@ -6,6 +6,7 @@ use App\Models\Crianca;
 use App\Models\Turma;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\LogAuditoria;
 
 class PesquisaController extends Controller
 {
@@ -58,6 +59,14 @@ class PesquisaController extends Controller
         
         // Configura papel A4 em paisagem para caber mais colunas se necessário
         $pdf->setPaper('a4', 'landscape');
+
+        LogAuditoria::create([
+            'usuario_id' => auth()->id(),
+            'acao' => 'Relatório: Exportou listagem de crianças',
+            'tabela_afetada' => 'criancas',
+            'detalhes' => 'Quantidade de registros exportados: '.$criancas->count(),
+            'data_hora' => now(),
+        ]);
 
         return $pdf->download("listagem_criancas_" . now()->format('d_m_Y') . ".pdf");
     }

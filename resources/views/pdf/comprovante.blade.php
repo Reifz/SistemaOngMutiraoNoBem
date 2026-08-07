@@ -5,7 +5,7 @@
     <title>Comprovante de Pré-Inscrição - Mutirão no Bem</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 40px; }
-        .header { text-align: center; border-bottom: 2px solid #3f226b; padding-bottom: 20px; margin-bottom: 30px; }
+        .header { text-align: center; border-bottom: 8px solid #3f226b; padding-bottom: 20px; margin-bottom: 30px; }
         .header h1 { color: #3f226b; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
         .header p { margin: 5px 0; color: #666; font-size: 14px; }
         

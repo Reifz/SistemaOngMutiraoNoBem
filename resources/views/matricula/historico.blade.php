@@ -14,34 +14,55 @@
                 </div>
 
                 <!-- Botões de Atalho para as Etapas -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-10">
                     <a href="{{ route('triagem.onlyRead', $crianca->id) }}" class="flex items-center justify-center p-4 bg-gray-50 border-2 border-dashed border-multirao-roxo/20 rounded-xl hover:bg-multirao-roxo hover:text-white transition group">
                         <div class="text-center">
-                            <p class="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:text-white">Etapa 1</p>
-                            <p class="font-bold uppercase">Ver Pré-Inscrição</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:text-white">Pré-Inscrição</p>
+                            <p class="font-bold uppercase text-xs">Ver Pré-Inscrição</p>
                         </div>
                     </a>
-                    <a href="{{ route('matricula.show', $crianca->id) }}" class="flex items-center justify-center p-4 bg-gray-50 border-2 border-dashed border-multirao-roxo/20 rounded-xl hover:bg-multirao-roxo hover:text-white transition group">
-                        <div class="text-center">
-                            <p class="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:text-white">Etapa 2</p>
-                            <p class="font-bold uppercase">Ver Matrícula</p>
-                        </div>
-                    </a>
-                    @if($crianca->anamnese)
-                        <a href="{{ route('anamnese.show', $crianca->id) }}" class="flex items-center justify-center p-4 bg-gray-50 border-2 border-dashed border-multirao-roxo/20 rounded-xl hover:bg-multirao-roxo hover:text-white transition group">
+
+                    @foreach($crianca->matriculas as $mat)
+                        @php
+                            $ano = $mat->anoLetivo->ano ?? '';
+                            $anamneseDesteAno = $crianca->anamneses->where('ano_letivo_id', $mat->ano_letivo_id)->first();
+                        @endphp
+                        
+                        <a href="{{ route('matricula.show', [$crianca->id, 'ano_letivo_id' => $mat->ano_letivo_id]) }}" class="flex items-center justify-center p-4 bg-gray-50 border-2 border-dashed border-multirao-roxo/20 rounded-xl hover:bg-multirao-roxo hover:text-white transition group">
                             <div class="text-center">
-                                <p class="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:text-white">Etapa 3</p>
-                                <p class="font-bold uppercase">Ver Anamnese</p>
+                                <p class="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:text-white">Ano {{ $ano }}</p>
+                                <p class="font-bold uppercase text-xs">Matrícula {{ $ano }}</p>
                             </div>
                         </a>
-                    @else
-                        <div class="flex items-center justify-center p-4 bg-gray-100 border-2 border-dashed border-gray-200 rounded-xl cursor-not-allowed opacity-50">
-                            <div class="text-center">
-                                <p class="text-[10px] font-black uppercase tracking-widest opacity-60">Etapa 3</p>
-                                <p class="font-bold uppercase text-gray-400">Anamnese não realizada</p>
-                            </div>
+
+                        @if($anamneseDesteAno)
+                            <a href="{{ route('anamnese.show', [$crianca->id, 'ano_letivo_id' => $mat->ano_letivo_id]) }}" class="flex items-center justify-center p-4 bg-gray-50 border-2 border-dashed border-multirao-roxo/20 rounded-xl hover:bg-multirao-roxo hover:text-white transition group">
+                                <div class="text-center">
+                                    <p class="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:text-white">Ano {{ $ano }}</p>
+                                    <p class="font-bold uppercase text-xs">Anamnese {{ $ano }}</p>
+                                </div>
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-8">
+                    <form action="{{ route('matricula.historico', $crianca->id) }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label for="data_inicio" class="block text-xs font-bold text-multirao-roxo uppercase tracking-wider mb-1">Início</label>
+                            <input type="date" name="data_inicio" id="data_inicio" value="{{ $data_inicio }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-multirao-roxo focus:ring-multirao-roxo text-sm">
                         </div>
-                    @endif
+                        <div>
+                            <label for="data_fim" class="block text-xs font-bold text-multirao-roxo uppercase tracking-wider mb-1">Fim</label>
+                            <input type="date" name="data_fim" id="data_fim" value="{{ $data_fim }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-multirao-roxo focus:ring-multirao-roxo text-sm">
+                        </div>
+                        <button type="submit" class="bg-multirao-roxo text-white font-bold py-2 px-4 rounded-md shadow hover:bg-opacity-90 transition uppercase text-xs">
+                            Filtrar Histórico
+                        </button>
+                        <a href="{{ route('matricula.historico', $crianca->id) }}" class="bg-white text-gray-500 font-bold py-2 px-4 rounded-md shadow-sm border hover:bg-gray-100 transition uppercase text-xs text-center">
+                            Limpar
+                        </a>
+                    </form>
                 </div>
 
                 <!-- Linha do Tempo (Logs) -->
@@ -49,7 +70,7 @@
                     <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-multirao-roxo/10"></div>
                     
                     <div class="space-y-8">
-                        @forelse($crianca->logsAuditoria->sortByDesc('data_hora') as $log)
+                        @forelse($logsAuditoria as $log)
                             <div class="relative pl-12">
                                 <div class="absolute left-2.5 top-1.5 w-3.5 h-3.5 rounded-full bg-multirao-roxo border-4 border-white shadow-sm"></div>
                                 <div class="bg-gray-50 p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition">

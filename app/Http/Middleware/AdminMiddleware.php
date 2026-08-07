@@ -15,7 +15,7 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
+        if (!auth()->check() || !auth()->user()->ativo || !auth()->user()->isAdmin()) {
             return redirect()->route('home')->with('error', 'Acesso restrito a administradores.');
         }
 

@@ -6,7 +6,6 @@
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-xl font-bold text-multirao-roxo uppercase">Nova Mensagem</h2>
-                        <p class="text-sm text-gray-500">Envie uma mensagem interna para outro colaborador</p>
                     </div>
                     <a href="{{ route('mensagens.index') }}" class="text-multirao-roxo font-bold hover:underline uppercase text-sm flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>

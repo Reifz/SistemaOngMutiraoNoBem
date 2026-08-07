@@ -65,9 +65,9 @@ class DashboardController extends Controller
             ->whereDay('data_nascimento', now()->day)
             ->get();
 
-        // Item 3: Alertas de Triagem (paradas há mais de 7 dias)
+        // Item 3: Alertas de Triagem (paradas há mais de 5 dias)
         $alertasTriagem = Crianca::where('status', 'PREENCHER')
-            ->where('created_at', '<=', now()->subDays(7))
+            ->where('created_at', '<=', now()->subDays(5))
             ->get();
 
         return view('dashboard', compact('triagem', 'status', 'nome', 'data_inicio', 'data_fim', 'aniversariantes', 'alertasTriagem'));

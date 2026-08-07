@@ -1,50 +1,53 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-sm mb-4 p-2">
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-sm mb-4">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 mr-4 ml-4">
-        <div class="flex justify-between h-16 mr-4 ml-4">
-            <div class="flex">
+    <div class="w-full px-3 lg:px-4 2xl:px-6">
+        <div class="flex h-16 items-center gap-3">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}">
-                        <x-application-logo class="block h-10 w-auto" />
+                        <x-application-logo class="block !h-11 w-auto max-w-[120px]" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden min-w-0 flex-1 items-stretch justify-center gap-2 xl:ms-4 xl:flex 2xl:gap-4">
 
                     @auth
-                    <x-nav-link :href="route('triagem.index')" :active="request()->routeIs('triagem.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('triagem.index')" :active="request()->routeIs('triagem.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('1. Triagem') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('matricula.index')" :active="request()->routeIs('matricula.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('matricula.index')" :active="request()->routeIs('matricula.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('2. Matrícula') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('anamnese.index')" :active="request()->routeIs('anamnese.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('anamnese.index')" :active="request()->routeIs('anamnese.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('3. Anamnese') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('turmas.index')" :active="request()->routeIs('turmas.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('turmas.index')" :active="request()->routeIs('turmas.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('4. Turmas') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('rematricula.index')" :active="request()->routeIs('rematricula.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('rematricula.index')" :active="request()->routeIs('rematricula.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('Rematrícula') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('pesquisa.index')" :active="request()->routeIs('pesquisa.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('pesquisa.index')" :active="request()->routeIs('pesquisa.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('Crianças') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('relatorios.evasao')" :active="request()->routeIs('relatorios.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('relatorios.evasao')" :active="request()->routeIs('relatorios.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('Evasão') }}
                     </x-nav-link>
 
                     @if(Auth::user()->isAdmin())
-                    <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')" class="text-sm font-bold uppercase tracking-wider">
+                    <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
                         {{ __('Usuários') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('configuracoes.index')" :active="request()->routeIs('configuracoes.*')" class="text-xs font-bold uppercase tracking-normal 2xl:tracking-wider">
+                        {{ __('Configurações') }}
                     </x-nav-link>
                     @endif
                     @endauth
@@ -52,10 +55,10 @@
             </div>  
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden shrink-0 items-center gap-3 xl:flex">
                 @auth
                 <!-- Mensagens -->
-                <a href="{{ route('mensagens.index') }}" class="relative mr-4 text-multirao-roxo hover:text-multirao-roxo/80 transition p-1" title="Mensagens">
+                <a href="{{ route('mensagens.index') }}" class="relative shrink-0 text-multirao-roxo hover:text-multirao-roxo/80 transition p-1" title="Mensagens">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     @php $unreadCount = \App\Models\Mensagem::where('destinatario_id', Auth::id())->where('lida', false)->count(); @endphp
                     @if($unreadCount > 0)
@@ -65,8 +68,8 @@
 
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-bold rounded-md text-multirao-roxo bg-white hover:text-multirao-roxo/80 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                        <button class="inline-flex max-w-[140px] items-center whitespace-nowrap px-2 py-2 border border-transparent text-xs leading-4 font-bold rounded-md text-multirao-roxo bg-white hover:text-multirao-roxo/80 focus:outline-none transition ease-in-out duration-150 2xl:max-w-[180px]">
+                            <div class="truncate">{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4 text-multirao-roxo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -99,7 +102,7 @@
             </div>
 
             <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
+            <div class="-me-2 flex items-center xl:hidden">
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-multirao-roxo hover:text-multirao-roxo hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -111,13 +114,60 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-white border-t border-gray-100">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden xl:hidden bg-white border-t border-gray-100">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">
                 {{ __('Início') }}
             </x-responsive-nav-link>
+
+            @guest
+            <x-responsive-nav-link :href="route('login')" :active="request()->routeIs('login')">
+                {{ __('Acesso Restrito') }}
+            </x-responsive-nav-link>
+            @endguest
+
+            @auth
+            <x-responsive-nav-link :href="route('triagem.index')" :active="request()->routeIs('triagem.*')">
+                {{ __('1. Triagem') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('matricula.index')" :active="request()->routeIs('matricula.*')">
+                {{ __('2. Matrícula') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('anamnese.index')" :active="request()->routeIs('anamnese.*')">
+                {{ __('3. Anamnese') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('turmas.index')" :active="request()->routeIs('turmas.*')">
+                {{ __('4. Turmas') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('rematricula.index')" :active="request()->routeIs('rematricula.*')">
+                {{ __('Rematrícula') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('pesquisa.index')" :active="request()->routeIs('pesquisa.*')">
+                {{ __('Crianças') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('relatorios.evasao')" :active="request()->routeIs('relatorios.*')">
+                {{ __('Evasão') }}
+            </x-responsive-nav-link>
+
+            @if(Auth::user()->isAdmin())
+            <x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
+                {{ __('Usuários') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('configuracoes.index')" :active="request()->routeIs('configuracoes.*')">
+                {{ __('Configurações') }}
+            </x-responsive-nav-link>
+            @endif
+            @endauth
         </div>
 
+        @auth
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
@@ -142,5 +192,6 @@
                 </form>
             </div>
         </div>
+        @endauth
     </div>
 </nav>

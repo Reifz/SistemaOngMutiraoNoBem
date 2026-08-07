@@ -20,9 +20,16 @@
                     <h2 class="text-2xl font-bold text-multirao-roxo uppercase">
                         Detalhes da Pré-Inscrição
                     </h2>
-                    <a href="{{ route('triagem.index') }}" class="text-sm font-bold text-gray-500 hover:text-multirao-roxo transition">
-                        &larr; Voltar para a Lista
-                    </a>
+                    <div class="flex items-center gap-3">
+                        @if(!in_array($crianca->status, ['EVADIDA', 'DESISTENTE']))
+                            <button type="button" onclick="openDesistenciaModal({{ $crianca->id }})" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded text-xs transition duration-300 shadow-sm uppercase">
+                                Registrar Desist&ecirc;ncia
+                            </button>
+                        @endif
+                        <a href="{{ route('triagem.index') }}" class="text-sm font-bold text-gray-500 hover:text-multirao-roxo transition">
+                            &larr; Voltar para a Lista
+                        </a>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -131,4 +138,6 @@
             </div>
         </div>
     </div>
+
+    <x-desistencia-modal :crianca="$crianca" />
 </x-app-layout>

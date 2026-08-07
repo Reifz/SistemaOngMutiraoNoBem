@@ -64,15 +64,28 @@ class Crianca extends Model
         return $this->hasMany(Matricula::class, 'crianca_id');
     }
 
+    protected $overrideAnoLetivoId = null;
+
+    public function setOverrideAnoLetivoId($id)
+    {
+        $this->overrideAnoLetivoId = $id;
+        return $this;
+    }
+
+    public function anamneses()
+    {
+        return $this->hasMany(Anamnese::class, 'crianca_id');
+    }
+
     /**
      * Retorna a matrícula do ano letivo atual.
      */
     public function matriculaAtual()
     {
-        $anoAtual = AnoLetivo::atual();
-        if (!$anoAtual) return null;
+        $anoId = $this->overrideAnoLetivoId ?? (AnoLetivo::atual() ? AnoLetivo::atual()->id : null);
+        if (!$anoId) return null;
         
-        return $this->matriculas()->where('ano_letivo_id', $anoAtual->id)->first();
+        return $this->matriculas()->where('ano_letivo_id', $anoId)->first();
     }
 
     /**
@@ -165,6 +178,39 @@ class Crianca extends Model
     public function turma()
     {
         return $this->belongsTo(Turma::class, 'turma_id');
+    }
+
+    public function getTurmaAttribute()
+    {
+        $matricula = $this->matriculaAtual();
+        if ($matricula) {
+            if ($matricula->relationLoaded('turma')) {
+                return $matricula->turma;
+            }
+            if ($matricula->turma_id) {
+                return Turma::find($matricula->turma_id);
+            }
+            return null;
+        }
+        return $this->relations['turma'] ?? $this->belongsTo(Turma::class, 'turma_id')->first();
+    }
+
+    public function getDataEvasaoAttribute()
+    {
+        $matricula = $this->matriculaAtual();
+        return $matricula ? $matricula->data_evasao : ($this->attributes['data_evasao'] ?? null);
+    }
+
+    public function getMotivoEvasaoAttribute()
+    {
+        $matricula = $this->matriculaAtual();
+        return $matricula ? $matricula->motivo_evasao : ($this->attributes['motivo_evasao'] ?? null);
+    }
+
+    public function getObservacaoEvasaoAttribute()
+    {
+        $matricula = $this->matriculaAtual();
+        return $matricula ? $matricula->observacao_evasao : ($this->attributes['observacao_evasao'] ?? null);
     }
 
     public function responsaveis()

@@ -29,6 +29,7 @@
                             <label for="status" class="block text-xs font-bold text-multirao-roxo uppercase tracking-wider mb-1">Status no Ano ({{ $anoAtual->ano ?? '' }})</label>
                             <select name="status" id="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-multirao-roxo focus:ring-multirao-roxo text-sm">
                                 <option value="TODOS" {{ $status == 'TODOS' ? 'selected' : '' }}>Todos os Status</option>
+                                <option value="SEM_MATRICULA" {{ $status == 'SEM_MATRICULA' ? 'selected' : '' }}>Sem Matrícula</option>
                                 <option value="PENDENTE_REMATRICULA_MATRICULA" {{ $status == 'PENDENTE_REMATRICULA_MATRICULA' ? 'selected' : '' }}>Pendente Matrícula</option>
                                 <option value="PENDENTE_REMATRICULA_ANAMNESE" {{ $status == 'PENDENTE_REMATRICULA_ANAMNESE' ? 'selected' : '' }}>Pendente Anamnese</option>
                                 <option value="REMATRICULADA" {{ $status == 'REMATRICULADA' ? 'selected' : '' }}>Rematriculada (Pronta)</option>
@@ -72,7 +73,16 @@
                         </div>
                     @endif
 
-                    @if($criancas->isEmpty())
+                    @if(!$podeIniciarRematricula)
+                        <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 shadow-sm" role="alert">
+                            <p class="font-bold uppercase text-xs">Período de Rematrícula não Iniciado</p>
+                            @if($anoAtual)
+                                <p>O preenchimento das rematrículas para o ano letivo de <b>{{ $anoAtual->ano }}</b> começará apenas em <b>{{ $anoAtual->data_virada->format('d/m/Y') }}</b>.</p>
+                            @else
+                                <p>Não há nenhum ano letivo ativo ou configurado no sistema.</p>
+                            @endif
+                        </div>
+                    @elseif($criancas->isEmpty())
                         <div class="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 shadow-sm" role="alert">
                             <p>Nenhuma criança encontrada para os filtros aplicados.</p>
                         </div>
@@ -89,7 +99,14 @@
                                 </thead>
                                 <tbody class="text-gray-600 text-sm font-light">
                                     @foreach($criancas as $crianca)
-                                        @php $matricula = $crianca->matriculas->first(); @endphp
+                                        @php
+                                            $matricula = $crianca->matriculas->firstWhere('ano_letivo_id', $anoAtual->id);
+                                            $ultimaMatriculaAnterior = $crianca->matriculas
+                                                ->filter(fn ($item) => ($item->anoLetivo->ano ?? PHP_INT_MAX) < $anoAtual->ano)
+                                                ->sortByDesc(fn ($item) => $item->anoLetivo->ano ?? 0)
+                                                ->first();
+                                            $turmaAnteriorNome = $ultimaMatriculaAnterior?->turma?->nome ?? 'Nenhuma';
+                                        @endphp
                                         <tr class="border-b border-gray-200 hover:bg-gray-50 transition duration-150">
                                             <td class="py-3 px-6 text-left whitespace-nowrap">
                                                 <div class="font-bold text-gray-800">{{ $crianca->nome }}</div>
@@ -119,33 +136,48 @@
                                                     <div class="font-bold text-multirao-roxo">{{ $matricula->turma->nome }}</div>
                                                 @else
                                                     <div class="text-gray-400 italic text-xs">Não alocada</div>
+                                                    <div class="text-[10px] text-gray-500 font-medium">Turma Anterior: {{ $turmaAnteriorNome }}</div>
                                                 @endif
                                             </td>
                                             <td class="py-3 px-6 text-center">
-                                                <div class="flex gap-2 justify-center">
+                                                <div class="flex gap-2 justify-center items-center flex-wrap">
                                                     @if(!$matricula)
                                                         <form action="{{ route('rematricula.iniciar', $crianca->id) }}" method="POST">
                                                             @csrf
                                                             <input type="hidden" name="ano_letivo_id" value="{{ $anoAtual->id }}">
-                                                            <button type="submit" class="bg-multirao-roxo hover:bg-opacity-90 text-white font-bold py-1 px-4 rounded text-[10px] transition duration-300 shadow-sm uppercase">
+                                                            <button type="submit" class="bg-multirao-roxo hover:bg-opacity-90 text-white font-bold py-1.5 px-4 rounded text-[10px] transition duration-300 shadow-sm uppercase">
                                                                 Iniciar Matrícula {{ $anoAtual->ano }}
                                                             </button>
                                                         </form>
                                                     @else
-                                                        <a href="{{ route('matricula.show', $crianca->id) }}" class="text-multirao-roxo hover:bg-multirao-amarelo font-bold py-1 px-3 rounded text-[10px] border border-multirao-roxo transition duration-300 shadow-sm uppercase">
-                                                            Ver Prontuário Anual
-                                                        </a>
-                                                        
-                                                        {{-- Botão para futuro ano --}}
-                                                        @php $proximoAno = $anosLetivos->where('ano', '>', $anoAtual->ano)->first(); @endphp
-                                                        @if($proximoAno)
-                                                            <form action="{{ route('rematricula.iniciar', $crianca->id) }}" method="POST">
+                                                        @if($matricula->status == 'PENDENTE_REMATRICULA_MATRICULA')
+                                                            <a href="{{ route('matricula.formulario', $crianca->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-1.5 px-3 rounded text-[10px] transition duration-300 shadow-sm uppercase">
+                                                                1. Atualizar Matrícula
+                                                            </a>
+                                                            <form action="{{ route('rematricula.confirmar_dados', $crianca->id) }}" method="POST" class="inline" onsubmit="return confirm('Tem certeza que deseja confirmar os dados escolares do ano anterior para esta criança?')">
                                                                 @csrf
-                                                                <input type="hidden" name="ano_letivo_id" value="{{ $proximoAno->id }}">
-                                                                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-[10px] transition duration-300 shadow-sm uppercase">
-                                                                    Preparar {{ $proximoAno->ano }}
+                                                                <button type="submit" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-1.5 px-3 rounded text-[10px] border border-gray-300 transition duration-300 shadow-sm uppercase">
+                                                                    Confirmar sem Alterar
                                                                 </button>
                                                             </form>
+                                                        @elseif($matricula->status == 'PENDENTE_REMATRICULA_ANAMNESE')
+                                                            <a href="{{ route('anamnese.formulario', $crianca->id) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded text-[10px] transition duration-300 shadow-sm uppercase">
+                                                                2. Atualizar Anamnese
+                                                            </a>
+                                                            <form action="{{ route('rematricula.confirmar_anamnese', $crianca->id) }}" method="POST" class="inline" onsubmit="return confirm('Tem certeza que deseja confirmar a anamnese do ano anterior para esta criança?')">
+                                                                @csrf
+                                                                <button type="submit" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-1.5 px-3 rounded text-[10px] border border-gray-300 transition duration-300 shadow-sm uppercase">
+                                                                    Confirmar sem Alterar
+                                                                </button>
+                                                            </form>
+                                                        @elseif($matricula->status == 'REMATRICULADA' || $matricula->status == 'APROVADA')
+                                                            <a href="{{ route('turmas.index') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-4 rounded text-[10px] transition duration-300 shadow-sm uppercase">
+                                                                Ir para Alocação de Turma
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ route('matricula.show', $crianca->id) }}" class="text-multirao-roxo hover:bg-multirao-amarelo font-bold py-1.5 px-3 rounded text-[10px] border border-multirao-roxo transition duration-300 shadow-sm uppercase">
+                                                                Ver Prontuário Anual
+                                                            </a>
                                                         @endif
                                                     @endif
                                                 </div>

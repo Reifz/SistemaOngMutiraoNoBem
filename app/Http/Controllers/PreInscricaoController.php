@@ -18,7 +18,8 @@ class PreInscricaoController extends Controller
      */
     public function index()
     {
-        return view('pre_inscricao');
+        $inscricoesAbertas = \App\Services\ConfiguracaoService::get('inscricoes_abertas', true);
+        return view('pre_inscricao', compact('inscricoesAbertas'));
     }
 
     /**
@@ -26,6 +27,11 @@ class PreInscricaoController extends Controller
      */
     public function store(Request $request)
     {
+        $inscricoesAbertas = \App\Services\ConfiguracaoService::get('inscricoes_abertas', true);
+        if (!$inscricoesAbertas) {
+            return redirect()->back()->withErrors(['error' => 'As inscrições estão temporariamente fechadas. Novos envios não são permitidos.'])->withInput();
+        }
+
         $validated = $request->validate([
             // Dados da Criança
             'crianca_nome' => 'required|string|max:255',

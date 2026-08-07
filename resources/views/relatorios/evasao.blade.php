@@ -6,7 +6,6 @@
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-2xl font-bold text-multirao-roxo uppercase">Relatório de Evasão</h2>
-                        <p class="text-gray-500 text-sm italic uppercase font-bold tracking-widest">Análise de retenção e motivos de desligamento</p>
                     </div>
                     <div class="flex items-center gap-4">
                         <div class="text-right">

@@ -66,8 +66,12 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($crianca->turma)
-                                            <span class="text-sm font-bold text-multirao-roxo">{{ $crianca->turma->nome }}</span>
-                                            <div class="text-[10px] text-gray-400 uppercase tracking-tighter">{{ $crianca->turma->turno }}</div>
+                                            @php
+                                                $turnoManha = stripos($crianca->turma->turno ?? '', 'manh') !== false;
+                                                $turnoBadge = $turnoManha ? 'bg-yellow-200 text-yellow-950 border-yellow-500' : 'bg-blue-200 text-blue-950 border-blue-600';
+                                            @endphp
+                                            <span class="inline-flex text-sm font-bold px-2 py-1 rounded border {{ $turnoBadge }}">{{ $crianca->turma->nome }}</span>
+                                            <div class="text-[10px] text-gray-400 uppercase tracking-tighter mt-1">{{ $crianca->turma->turno }}</div>
                                         @else
                                             <span class="text-xs text-gray-400 italic">Sem Turma</span>
                                         @endif
@@ -98,6 +102,7 @@
                                                 'APROVADA' => 'bg-green-100 text-green-800',
                                                 'EM_TURMA' => 'bg-purple-100 text-purple-800',
                                                 'REJEITADO' => 'bg-red-100 text-red-800',
+                                                'DESISTENTE' => 'bg-amber-100 text-amber-800',
                                             ];
                                             $class = $statusClasses[$crianca->status] ?? 'bg-gray-100 text-gray-800';
                                         @endphp

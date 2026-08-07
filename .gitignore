@@ -19,6 +19,7 @@ credenciais*.md
 # PHP/Laravel dependencies and generated files
 /vendor/
 /node_modules/
+/.npm-cache/
 /bootstrap/cache/*
 !/bootstrap/cache/.gitignore
 /public/build/

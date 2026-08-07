@@ -37,6 +37,7 @@
                                 <option value="PENDENTE_MATRICULA" {{ $status == 'PENDENTE_MATRICULA' ? 'selected' : '' }}>Aguardando Preenchimento</option>
                                 <option value="PENDENTE_APROVACAO" {{ $status == 'PENDENTE_APROVACAO' ? 'selected' : '' }}>Aguardando Aprovação</option>
                                 <option value="APROVADA" {{ $status == 'APROVADA' ? 'selected' : '' }}>Matrícula Aprovada</option>
+                                <option value="DESISTENTE" {{ $status == 'DESISTENTE' ? 'selected' : '' }}>Desistentes</option>
                             </select>
                         </div>
 
@@ -63,6 +64,7 @@
                         @if($status == 'PENDENTE_MATRICULA') Aguardando Preenchimento Interno
                         @elseif($status == 'PENDENTE_APROVACAO') Revisão de Dados e Documentos
                         @elseif($status == 'APROVADA') Matrículas Finalizadas
+                        @elseif($status == 'DESISTENTE') Desistentes
                         @else Gestão Geral de Matrícula @endif
                     </h3>
 
@@ -109,6 +111,10 @@
                                                     <span class="bg-purple-100 text-purple-700 py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider">Matriculada / Em Turma</span>
                                                 @elseif($crianca->status == 'EVADIDA')
                                                     <span class="bg-red-100 text-red-700 py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider">Evasão / Saída</span>
+                                                @elseif($crianca->status == 'DESISTENTE')
+                                                    <span class="bg-amber-100 text-amber-800 py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider">Desistente</span>
+                                                @else
+                                                    <span class="bg-gray-100 text-gray-800 py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider">{{ str_replace('_', ' ', $crianca->status) }}</span>
                                                 @endif
                                             </td>
                                             <td class="py-3 px-6 text-center">
@@ -122,7 +128,7 @@
                                                         </a>
                                                     @else
                                                         <a href="{{ route('matricula.show', $crianca->id) }}" class="bg-multirao-roxo hover:bg-opacity-90 text-white font-bold py-1 px-3 rounded text-xs transition duration-300 shadow-sm uppercase">
-                                                            @if(in_array($crianca->status, ['PENDENTE_APROVACAO']))
+                                                            @if(!in_array($crianca->status, ['EVADIDA', 'DESISTENTE']))
                                                                 Visualizar / Editar
                                                             @else
                                                                 Visualizar

@@ -21,7 +21,6 @@ class DemonstracaoSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Limpar dados existentes
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         Crianca::truncate();
         Responsavel::truncate();
@@ -39,14 +38,12 @@ class DemonstracaoSeeder extends Seeder
         $admin = User::where('role', 'admin')->first();
         $adminId = $admin ? $admin->id : 1;
 
-        // 2. Ano Letivo Ativo
         $anoAtual = AnoLetivo::create([
             'ano' => 2026,
             'data_virada' => Carbon::parse('2026-01-01'),
             'status_ativo' => true
         ]);
 
-        // 3. Turmas
         $turmaManha = Turma::create([
             'nome' => 'Turma A - Manhã',
             'turno' => 'Manhã',
@@ -67,28 +64,21 @@ class DemonstracaoSeeder extends Seeder
             'descricao' => 'Turma de artes e esportes (Tarde)'
         ]);
 
-        // 4. Inserção de dados estratégicos
 
-        // ANIVERSARIANTES DE HOJE
         $this->criarCenario($anoAtual, 'João Aniversariante', 'PREENCHER', $adminId, false, false, null, false, true);
         $this->criarCenario($anoAtual, 'Maria Festa', 'EM_TURMA', $adminId, true, true, $turmaTarde, false, true);
 
-        // ALERTAS DE TRIAGEM (Atrasados > 7 dias)
         $this->criarCenario($anoAtual, 'Pedro Atrasado', 'PREENCHER', $adminId, false, false, null, false, false, true);
         $this->criarCenario($anoAtual, 'Ana Pendente Antiga', 'PREENCHER', $adminId, false, false, null, false, false, true);
 
-        // AGUARDANDO ANAMNESE (Status: APROVADA)
         $this->criarCenario($anoAtual, 'Lucas Esperando Saude', 'APROVADA', $adminId, true);
         $this->criarCenario($anoAtual, 'Carla Pronta Anamnese', 'APROVADA', $adminId, true);
 
-        // EVADIDAS POR TURNO (Para o Relatório de Evasão)
         $this->criarCenario($anoAtual, 'Gabriel Evadido Manhã', 'EVADIDA', $adminId, true, true, $turmaManha, true, false, false, 'Manhã');
         $this->criarCenario($anoAtual, 'Beatriz Evadida Tarde', 'EVADIDA', $adminId, true, true, $turmaTarde, true, false, false, 'Tarde');
 
-        // REGISTRO MANUEL FERRAZ (Caso Real)
         $this->criarCenario($anoAtual, 'Manuel Ferraz', 'PENDENTE_APROVACAO', $adminId, true, false, null, false, false, false, 'Tarde', 'manhã');
 
-        // OUTROS STATUS PARA COMPLETAR O FLUXO
         $this->criarCenario($anoAtual, 'Enzo Gabriel', 'PENDENTE_MATRICULA', $adminId);
         $this->criarCenario($anoAtual, 'Valentina Rosa', 'PENDENTE_APROVACAO', $adminId, true);
         $this->criarCenario($anoAtual, 'Thiago Rocha', 'ANAMNESE_CONCLUIDA', $adminId, true, true);
@@ -151,7 +141,6 @@ class DemonstracaoSeeder extends Seeder
             'created_at' => $createdAt
         ]);
 
-        // LOG: PRÉ-INSCRIÇÃO
         LogAuditoria::create([
             'usuario_id' => null, // Pré-inscrição é pública
             'acao' => 'Pré-inscrição: Recebida pelo sistema',
@@ -161,7 +150,6 @@ class DemonstracaoSeeder extends Seeder
             'data_hora' => $createdAt,
         ]);
 
-        // SE AVANÇOU DA TRIAGEM
         if ($status != 'PREENCHER') {
             LogAuditoria::create([
                 'usuario_id' => $adminId,

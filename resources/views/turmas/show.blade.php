@@ -1,12 +1,16 @@
 <x-app-layout>
+    @php
+        $turnoManha = stripos($turma->turno ?? '', 'manh') !== false;
+        $turnoBorderColor = $turnoManha ? '#f59e0b' : '#1d4ed8';
+        $turnoBadge = $turnoManha ? 'bg-yellow-200 text-yellow-950 border-yellow-500' : 'bg-blue-200 text-blue-950 border-blue-600';
+    @endphp
     <div class="max-w-8xl mx-auto sm:px-6 lg:px-8 py-8">
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-t-8 border-multirao-roxo">
+        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-t-8" style="border-top-color: {{ $turnoBorderColor }};">
             <div class="p-8 text-gray-900">
                 
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-2xl font-bold text-multirao-roxo uppercase">{{ $turma->nome }}</h2>
-                        <p class="text-gray-500 text-sm italic uppercase font-bold tracking-widest">Detalhes da Turma e Lista de Alunos</p>
                     </div>
                     <div class="flex gap-4">
                         <a href="{{ route('turmas.edit', $turma->id) }}" class="bg-multirao-amarelo text-multirao-roxo font-bold py-2 px-4 rounded shadow hover:bg-opacity-90 transition uppercase text-xs flex items-center">
@@ -32,7 +36,7 @@
                 @endif
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                    <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="bg-gray-50 p-4 rounded-lg border {{ $turnoBadge }}">
                         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Turno</label>
                         <p class="text-lg font-bold text-multirao-roxo">{{ $turma->turno }}</p>
                     </div>

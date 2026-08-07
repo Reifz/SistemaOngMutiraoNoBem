@@ -7,6 +7,7 @@ use App\Models\Turma;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\LogAuditoria;
 
 class RelatorioController extends Controller
 {
@@ -158,6 +159,14 @@ class RelatorioController extends Controller
             'periodoNome',
             'motivoPrincipal'
         ));
+
+        LogAuditoria::create([
+            'usuario_id' => auth()->id(),
+            'acao' => 'Relatório: Exportou relatório de evasão',
+            'tabela_afetada' => 'criancas',
+            'detalhes' => 'Quantidade de registros exportados: '.$evadidos->count(),
+            'data_hora' => now(),
+        ]);
 
         return $pdf->download("relatorio_evasao_" . now()->format('d_m_Y') . ".pdf");
     }

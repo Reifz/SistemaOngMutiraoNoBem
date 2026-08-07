@@ -6,7 +6,6 @@
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-2xl font-bold text-multirao-roxo uppercase">Cadastrar Nova Turma</h2>
-                        <p class="text-gray-500 text-sm italic">Defina as configurações da nova sala/grupo.</p>
                     </div>
                     <a href="{{ route('turmas.index') }}" class="text-sm font-bold text-gray-500 hover:text-multirao-roxo transition flex items-center">
                         &larr; Voltar

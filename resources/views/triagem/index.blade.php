@@ -30,6 +30,7 @@
                                 <option value="PREENCHER" {{ $status == 'PREENCHER' ? 'selected' : '' }}>Triagem (Pendente)</option>
                                 <option value="PENDENTE_MATRICULA" {{ $status == 'PENDENTE_MATRICULA' ? 'selected' : '' }}>Aprovadas</option>
                                 <option value="REJEITADO" {{ $status == 'REJEITADO' ? 'selected' : '' }}>Rejeitadas</option>
+                                <option value="DESISTENTE" {{ $status == 'DESISTENTE' ? 'selected' : '' }}>Desistentes</option>
                                 <option value="TODOS" {{ $status == 'TODOS' ? 'selected' : '' }}>Todos</option>
                             </select>
                         </div>
@@ -100,7 +101,7 @@
                                             <td class="py-3 px-6 text-center">
                                                 <div class="flex gap-2 justify-center">
 
-                                                    @if($crianca->status !== 'REJEITADO' && $crianca->status !== 'PENDENTE_MATRICULA')
+                                                    @if(!in_array($crianca->status, ['REJEITADO', 'PENDENTE_MATRICULA', 'DESISTENTE']))
                                                     <a href="{{ route('triagem.show', $crianca->id) }}" class="bg-multirao-roxo hover:bg-opacity-90 text-white font-bold py-1 px-3 rounded text-xs transition duration-300 shadow-sm">
                                                         Realizar Triagems
                                                     </a>
@@ -117,6 +118,9 @@
                                                     @endif
                                                     @if($crianca->status == 'PENDENTE_MATRICULA')
                                                        <span class="bg-green-600 text-white font-bold py-1 px-3 rounded text-xs uppercase">Aprovado</span>
+                                                    @endif
+                                                    @if($crianca->status == 'DESISTENTE')
+                                                       <span class="bg-amber-600 text-white font-bold py-1 px-3 rounded text-xs uppercase">Desistente</span>
                                                     @endif
                                                 </div>
                                             </td>

@@ -7,7 +7,6 @@
                     <div class="mb-8 text-center border-b pb-6 flex justify-between items-center">
                         <div class="text-left">
                             <h2 class="text-2xl font-bold text-multirao-roxo mb-2">EDITAR FICHA DE MATRÍCULA</h2>
-                            <p class="text-gray-500 text-sm italic">Atualizando informações de <b>{{ $crianca->nome }}</b>.</p>
                         </div>
                         <a href="{{ route('matricula.show', $crianca->id) }}" class="text-sm font-bold text-gray-500 hover:text-multirao-roxo transition flex items-center ml-4">
                             &larr; Cancelar e Voltar
@@ -589,7 +588,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_rg_responsavel" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_rg_responsavel" accept="application/pdf,image/*" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_certidao ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Certidão de Nascimento da Criança</label>
@@ -599,7 +598,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_certidao" style="width: 140px;"  class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_certidao" accept="application/pdf,image/*" style="width: 140px;"  class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_excel_matricula ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Ficha de Inscrição (Excel)</label>
@@ -609,7 +608,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_excel_matricula" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_excel_matricula" accept=".xlsx,.xls" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_rg ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">RG da Criança</label>
@@ -619,7 +618,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_rg_crianca" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_rg_crianca" accept="application/pdf,image/*" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_cpf ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">CPF da Criança</label>
@@ -629,7 +628,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_cpf_crianca" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_cpf_crianca" accept="application/pdf,image/*" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_comprovante_residencia ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Comprovante de Residência</label>
@@ -639,7 +638,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_comprovante_residencia" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_comprovante_residencia" accept="application/pdf,image/*" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_comprovante_escolaridade ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Comprovante de Escolaridade</label>
@@ -649,7 +648,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_comprovante_escolaridade" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_comprovante_escolaridade" accept="application/pdf,image/*" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                                 <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center hover:border-multirao-roxo transition duration-300 {{ $crianca->anexo_comprovante_renda ? 'bg-green-50' : '' }}">
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Comprovante de Renda</label>
@@ -659,7 +658,7 @@
                                             JÁ ENVIADO
                                         </p>
                                     @endif
-                                    <input type="file" name="anexo_comprovante_renda" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
+                                    <input type="file" name="anexo_comprovante_renda" accept="application/pdf,image/*" style="width: 140px;" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-multirao-roxo file:text-white hover:file:bg-opacity-90">
                                 </div>
                             </div>
                         </div>
@@ -674,6 +673,7 @@
             </div>
         </div>
     </div>
+    <x-file-selection-feedback />
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let familiarIndex = {{ $crianca->familiares->count() > 0 ? $crianca->familiares->count() : 1 }};

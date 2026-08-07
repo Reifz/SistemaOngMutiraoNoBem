@@ -6,7 +6,6 @@
                 <div class="flex justify-between items-center mb-8 pb-4 border-b">
                     <div>
                         <h2 class="text-2xl font-bold text-multirao-roxo uppercase">Editar Turma: {{ $turma->nome }}</h2>
-                        <p class="text-gray-500 text-sm italic">Atualize as informações da sala/grupo.</p>
                     </div>
                     <a href="{{ route('turmas.index') }}" class="text-sm font-bold text-gray-500 hover:text-multirao-roxo transition flex items-center">
                         &larr; Voltar

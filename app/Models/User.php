@@ -38,4 +38,13 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+
+    /**
+     * Verifica se o usuário possui ao menos um dos papéis informados.
+     * Administradores possuem acesso a todas as áreas.
+     */
+    public function hasAnyRole(string ...$roles): bool
+    {
+        return $this->isAdmin() || in_array($this->role, $roles, true);
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\LogAuditoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
@@ -35,15 +36,24 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:admin,user'],
+            'role' => ['required', 'in:admin,triagem,matricula,saude,educador,auditor,user'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'ativo' => true,
+        ]);
+
+        LogAuditoria::create([
+            'usuario_id' => auth()->id(),
+            'acao' => 'Acesso: Criou usuário',
+            'tabela_afetada' => 'users',
+            'registro_id' => $user->id,
+            'detalhes' => "Papel atribuído: {$user->role}",
+            'data_hora' => now(),
         ]);
 
         return redirect()->route('usuarios.index')
@@ -66,8 +76,14 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,'.$usuario->id],
-            'role' => ['required', 'in:admin,user'],
+            'role' => ['required', 'in:admin,triagem,matricula,saude,educador,auditor,user'],
         ]);
+
+        if ($usuario->is(auth()->user()) && $request->role !== 'admin') {
+            return back()->with('error', 'Você não pode remover seu próprio acesso administrativo.');
+        }
+
+        $roleAnterior = $usuario->role;
 
         $usuario->update([
             'name' => $request->name,
@@ -84,6 +100,15 @@ class UserController extends Controller
             ]);
         }
 
+        LogAuditoria::create([
+            'usuario_id' => auth()->id(),
+            'acao' => 'Acesso: Atualizou usuário',
+            'tabela_afetada' => 'users',
+            'registro_id' => $usuario->id,
+            'detalhes' => "Papel anterior: {$roleAnterior}; papel atual: {$usuario->role}; senha alterada: ".($request->filled('password') ? 'sim' : 'não'),
+            'data_hora' => now(),
+        ]);
+
         return redirect()->route('usuarios.index')
             ->with('success', 'Usuário atualizado com sucesso!');
     }
@@ -99,6 +124,15 @@ class UserController extends Controller
 
         $usuario->update([
             'ativo' => !$usuario->ativo,
+        ]);
+
+        LogAuditoria::create([
+            'usuario_id' => auth()->id(),
+            'acao' => 'Acesso: Alterou status de usuário',
+            'tabela_afetada' => 'users',
+            'registro_id' => $usuario->id,
+            'detalhes' => 'Novo status: '.($usuario->ativo ? 'ativo' : 'inativo'),
+            'data_hora' => now(),
         ]);
 
         $status = $usuario->ativo ? 'ativado' : 'desativado';

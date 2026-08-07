@@ -21,6 +21,7 @@
         * { box-sizing: border-box; }
         body {
             font-family: 'Poppins', sans-serif;
+            font-size: 19px;
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
@@ -54,14 +55,33 @@
         header p { color: #666; font-size: 0.9em; }
 
         .info-section {
-            background: #fdf2e9;
+            background: rgba(178, 170, 197, 0.08);
             padding: 20px;
-            border-left: 5px solid var(--primary-color);
+            border-left: 5px solid #2e194e;
             margin-bottom: 30px;
             border-radius: 4px;
         }
 
-        .info-section h3 { margin-top: 0; color: var(--primary-color); }
+        .info-section h3 { margin-top: 0; color: #111827; }
+
+        .info-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: rgba(239, 68, 68, 0.08);
+            border-left: 4px solid #ef4444;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #111827;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
 
         h2 {
             color: var(--primary-color);
@@ -80,7 +100,7 @@
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 6px;
-            font-size: 16px;
+            font-size: 1.05rem;
         }
 
         input:focus, select:focus {
@@ -142,7 +162,45 @@
         }
 
         @media (max-width: 600px) {
-            .container { padding: 20px; }
+            body {
+                padding: 10px;
+                font-size: 17px;
+            }
+
+            .container {
+                padding: 16px;
+                border-radius: 8px;
+            }
+
+            header {
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+            }
+
+            .logo-img {
+                max-width: 150px;
+            }
+
+            header h1 {
+                font-size: 1.65rem;
+                line-height: 1.2;
+            }
+
+            .info-section {
+                padding: 14px;
+            }
+
+            .info-item {
+                padding: 10px 12px;
+                gap: 6px;
+            }
+
+            input[type="text"],
+            input[type="email"],
+            select,
+            .btn-submit {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -173,13 +231,24 @@
 
         <div class="info-section" style="text-align: justify;">
             <h3>Informações Importantes</h3>
-            <ul>
-                <li>O preenchimento desta Ficha apenas manifesta o interesse de fazer a inscrição.</li>
-                <li>Somente após receber CONFIRMAÇÃO o(a) educando(a) estará matriculado.</li>
-                <li>Favor verificar se o telefone foi informado corretamente - entraremos em contato através dele.</li>
+            <ul class="info-list">
+                <li class="info-item">
+                    <span style="flex-shrink: 0;">📌</span> <span>O preenchimento desta Ficha apenas manifesta o interesse de fazer a inscrição.</span>
+                </li>
+                <li class="info-item">
+                    <span style="flex-shrink: 0;">📢</span> <span>Somente após receber CONFIRMAÇÃO o(a) educando(a) estará matriculado.</span>
+                </li>
+                <li class="info-item">
+                    <span style="flex-shrink: 0;">📞</span> <span>Favor verificar se o telefone foi informado corretamente - entraremos em contato através dele.</span>
+                </li>
             </ul>
-            <h3 style="color: #3f226b"><b><strong>Inscrições Abertas</strong></b></h3>
-            <p><strong>Público:</strong> Crianças de 6 a 11 anos.</p>
+            @if($inscricoesAbertas)
+                <h3 style="color: #111827"><b><strong>Inscrições Abertas</strong></b></h3>
+                <p><strong>Público:</strong> Crianças de 6 a 11 anos.</p>
+            @else
+                <h3 style="color: #111827"><b><strong>Inscrições Temporariamente Fechadas</strong></b></h3>
+                <p style="color: #111827; font-weight: bold;">No momento, o formulário de pré-inscrição está fechado.</p>
+            @endif
 
             <p>
                 <p><b><strong>Sobre a entidade</strong></b></p>
@@ -208,6 +277,7 @@
             </p>
         </div>
 
+        @if($inscricoesAbertas)
         <form action="{{ route('pre-inscricao.store') }}" method="POST">
             @csrf
 
@@ -322,6 +392,12 @@
 
             <button type="submit" class="btn-submit">Enviar Pré-Inscrição</button>
         </form>
+        @else
+            <div style="background: rgba(239, 68, 68, 0.08); border-left: 5px solid #ef4444; padding: 30px; border-radius: 8px; margin-top: 30px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <p style="font-size: 1.25em; font-weight: bold; color: #111827; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">⚠️ Pré-Inscrições Encerradas</p>
+                <p style="color: #111827; max-width: 600px; margin: 0 auto; line-height: 1.6;">O formulário de pré-inscrição de crianças está temporariamente desativado. Para obter mais informações sobre vagas, rematrículas ou o cronograma de atendimento do <strong>Mutirão no Bem</strong>, por favor entre em contato conosco pelos canais oficiais ou redes sociais.</p>
+            </div>
+        @endif
 
         <footer style="margin-top: 50px; text-align: center; color: #888; font-size: 0.8em;">
             <p>Mutirão no Bem | Cidade Dutra, São Paulo - SP</p>
@@ -329,5 +405,33 @@
         </footer>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const periodoEscola = document.getElementById('crianca_periodo');
+            const periodoOng = document.getElementById('crianca_periodo_ong');
+
+            if (periodoEscola && periodoOng) {
+                // Ao alterar o período da Escola
+                periodoEscola.addEventListener('change', function () {
+                    const valor = this.value;
+                    if (valor === 'Manhã') {
+                        periodoOng.value = 'Tarde';
+                    } else if (valor === 'Tarde') {
+                        periodoOng.value = 'Manhã';
+                    }
+                });
+
+                // Ao alterar o período da ONG
+                periodoOng.addEventListener('change', function () {
+                    const valor = this.value;
+                    if (valor === 'Manhã') {
+                        periodoEscola.value = 'Tarde';
+                    } else if (valor === 'Tarde') {
+                        periodoEscola.value = 'Manhã';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

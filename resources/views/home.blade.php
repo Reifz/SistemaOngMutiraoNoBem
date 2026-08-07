@@ -1,9 +1,7 @@
 <x-app-layout>
     <div class="py-12">
         <div class="max-w-8xl mx-auto sm:px-6 lg:px-8">
-            <!-- Seções de Destaque: Aniversariantes e Alertas -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <!-- Aniversariantes -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-l-8 border-multirao-amarelo">
                     <div class="p-6">
                         <h3 class="text-sm font-bold text-multirao-roxo uppercase flex items-center mb-4">
@@ -21,12 +19,11 @@
                     </div>
                 </div>
 
-                <!-- Alertas de Triagem -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-l-8 border-red-500">
                     <div class="p-6">
                         <h3 class="text-sm font-bold text-red-600 uppercase flex items-center mb-4">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Alertas de Triagem (> 7 dias)
+                            Alertas de Triagem (> 5 dias)
                         </h3>
                         @forelse($alertasTriagem as $alerta)
                             <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded border-b last:border-0">
@@ -50,9 +47,6 @@
                     <img src="{{ asset('logo.png') }}" alt="Logo Multirão Bem" class="h-10 mx-auto mb-6 p-2">
                     
                     <h1 class="text-3xl font-extrabold text-multirao-roxo mb-4">Bem-vindo ao Sistema Interno</h1>
-                    <p class="text-gray-600 max-w-2xl mx-auto text-lg mb-8 leading-relaxed">
-                        Este é o painel de controle administrativo da ONG <b>Multirão no Bem</b>. 
-                    </p>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
                         <div class="p-6 rounded-xl border border-indigo-100 shadow-sm">

@@ -22,11 +22,16 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($turmas as $turma)
-                        <div class="border rounded-lg p-6 bg-gray-50 hover:shadow-md transition relative border-l-8 {{ $turma->ativa ? 'border-green-500' : 'border-red-500' }}">
+                        @php
+                            $turnoManha = stripos($turma->turno ?? '', 'manh') !== false;
+                            $turnoBorderColor = $turnoManha ? '#f59e0b' : '#1d4ed8';
+                            $turnoBadge = $turnoManha ? 'bg-yellow-200 text-yellow-950 border-yellow-500' : 'bg-blue-200 text-blue-950 border-blue-600';
+                        @endphp
+                        <div class="border rounded-lg p-6 bg-gray-50 hover:shadow-md transition relative {{ $turma->ativa ? '' : 'opacity-70' }}" style="border-left: 12px solid {{ $turnoBorderColor }};">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 class="text-lg font-bold text-multirao-roxo uppercase leading-tight">{{ $turma->nome }}</h4>
-                                    <span class="inline-block bg-multirao-amarelo text-multirao-roxo text-[10px] font-bold px-2 py-1 rounded mt-1 uppercase">
+                                    <span class="inline-block {{ $turnoBadge }} border text-[10px] font-bold px-2 py-1 rounded mt-1 uppercase">
                                         {{ $turma->turno }}
                                     </span>
                                 </div>

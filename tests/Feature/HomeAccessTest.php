@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class ExampleTest extends TestCase
+class HomeAccessTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -19,7 +19,7 @@ class ExampleTest extends TestCase
 
     public function test_authenticated_user_can_view_home(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'educador', 'ativo' => true]);
 
         $response = $this->actingAs($user)->get('/');
 

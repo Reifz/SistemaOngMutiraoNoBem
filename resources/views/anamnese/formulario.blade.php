@@ -180,7 +180,21 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1 tracking-tight">Qual dessas características você enxerga na criança?</label>
-                                <textarea name="caracteristicas_crianca" rows="2" class="w-full rounded-md border-gray-300 shadow-sm focus:border-multirao-roxo focus:ring-multirao-roxo">{{ $dados['caracteristicas_crianca'] ?? '' }}</textarea>
+                                @php
+                                    $opcoesCaracteristicas = ['Coragem', 'Agitação', 'Organização', 'Distração', 'Esperteza', 'Falta de Disciplina'];
+                                    $caracteristicasSelecionadas = old('caracteristicas_crianca', $dados['caracteristicas_crianca'] ?? []);
+                                    if (is_string($caracteristicasSelecionadas)) {
+                                        $caracteristicasSelecionadas = array_filter(array_map('trim', explode(',', $caracteristicasSelecionadas)));
+                                    }
+                                @endphp
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                    @foreach($opcoesCaracteristicas as $caracteristica)
+                                        <label class="inline-flex items-center bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                            <input type="checkbox" name="caracteristicas_crianca[]" value="{{ $caracteristica }}" {{ in_array($caracteristica, (array)$caracteristicasSelecionadas) ? 'checked' : '' }} class="rounded border-gray-300 text-multirao-roxo focus:ring-multirao-roxo">
+                                            <span class="ml-2 text-sm text-gray-700">{{ $caracteristica }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>

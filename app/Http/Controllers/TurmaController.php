@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Turma;
 use App\Models\Crianca;
 use App\Models\LogAuditoria;
+use App\Models\Matricula;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TurmaController extends Controller
 {
@@ -79,27 +81,52 @@ class TurmaController extends Controller
             'crianca_id' => 'required|exists:criancas,id',
         ]);
 
-        $turma = Turma::findOrFail($id);
-        $crianca = Crianca::findOrFail($request->crianca_id);
+        $resultado = DB::transaction(function () use ($request, $id) {
+            $turma = Turma::query()->lockForUpdate()->findOrFail($id);
+            $crianca = Crianca::query()->lockForUpdate()->findOrFail($request->integer('crianca_id'));
 
-        // Verificar capacidade
-        if ($turma->criancas()->count() >= $turma->capacidade) {
-            return redirect()->back()->with('error', 'Esta turma já atingiu a capacidade máxima.');
+            if (!$turma->ativa) {
+                return ['error' => 'Não é possível alocar crianças em uma turma inativa.'];
+            }
+
+            if ($crianca->turma_id !== null) {
+                return ['error' => 'A criança já está alocada em uma turma.'];
+            }
+
+            if (!in_array($crianca->status, ['ANAMNESE_CONCLUIDA', 'REMATRICULADA'], true)) {
+                return ['error' => 'A criança ainda não está apta para alocação em turma.'];
+            }
+
+            if (($turma->idade_minima !== null && $crianca->idade < $turma->idade_minima)
+                || ($turma->idade_maxima !== null && $crianca->idade > $turma->idade_maxima)) {
+                return ['error' => 'A idade da criança não atende aos limites desta turma.'];
+            }
+
+            if ($turma->criancas()->count() >= $turma->capacidade) {
+                return ['error' => 'Esta turma já atingiu a capacidade máxima.'];
+            }
+
+            $crianca->update(['turma_id' => $turma->id, 'status' => 'EM_TURMA']);
+            $crianca->matriculas()->whereHas('anoLetivo', fn ($query) => $query->where('status_ativo', true))
+                ->update(['turma_id' => $turma->id, 'status' => 'EM_TURMA']);
+
+            LogAuditoria::create([
+                'usuario_id' => Auth::id(),
+                'acao' => "Turmas: Alocou criança",
+                'tabela_afetada' => 'criancas',
+                'registro_id' => $crianca->id,
+                'detalhes' => "Criança {$crianca->nome} alocada na turma {$turma->nome}.",
+                'data_hora' => now()
+            ]);
+
+            return ['crianca' => $crianca];
+        });
+
+        if (isset($resultado['error'])) {
+            return redirect()->back()->with('error', $resultado['error']);
         }
 
-        $crianca->update([
-            'turma_id' => $turma->id,
-            'status' => 'EM_TURMA'
-        ]);
-
-        LogAuditoria::create([
-            'usuario_id' => Auth::id(),
-            'acao' => "Turmas: Alocou criança",
-            'tabela_afetada' => 'criancas',
-            'registro_id' => $crianca->id,
-            'detalhes' => "Criança {$crianca->nome} alocada na turma {$turma->nome}.",
-            'data_hora' => now()
-        ]);
+        $crianca = $resultado['crianca'];
 
         return redirect()->back()->with('success', "Criança {$crianca->nome} alocada com sucesso!");
     }
@@ -114,21 +141,22 @@ class TurmaController extends Controller
         ]);
 
         $turma = Turma::findOrFail($id);
-        $crianca = Crianca::findOrFail($request->crianca_id);
+        $crianca = $turma->criancas()->findOrFail($request->integer('crianca_id'));
 
-        $crianca->update([
-            'turma_id' => null,
-            'status' => 'ANAMNESE_CONCLUIDA'
-        ]);
+        DB::transaction(function () use ($turma, $crianca) {
+            $crianca->update(['turma_id' => null, 'status' => 'ANAMNESE_CONCLUIDA']);
+            $crianca->matriculas()->whereHas('anoLetivo', fn ($query) => $query->where('status_ativo', true))
+                ->update(['turma_id' => null, 'status' => 'ANAMNESE_CONCLUIDA']);
 
-        LogAuditoria::create([
-            'usuario_id' => Auth::id(),
-            'acao' => "Turmas: Removeu criança da turma",
-            'tabela_afetada' => 'criancas',
-            'registro_id' => $crianca->id,
-            'detalhes' => "Criança {$crianca->nome} removida da turma {$turma->nome}.",
-            'data_hora' => now()
-        ]);
+            LogAuditoria::create([
+                'usuario_id' => Auth::id(),
+                'acao' => "Turmas: Removeu criança da turma",
+                'tabela_afetada' => 'criancas',
+                'registro_id' => $crianca->id,
+                'detalhes' => "Criança {$crianca->nome} removida da turma {$turma->nome}.",
+                'data_hora' => now()
+            ]);
+        });
 
         return redirect()->back()->with('success', "Criança removida da turma com sucesso!");
     }
@@ -179,8 +207,10 @@ class TurmaController extends Controller
         $turma = Turma::findOrFail($id);
         $nome = $turma->nome;
         
-        // Verificar se há alunos antes de excluir? 
-        // Por enquanto deleta.
+        if ($turma->criancas()->exists() || Matricula::where('turma_id', $turma->id)->exists()) {
+            return redirect()->back()->with('error', 'Não é possível excluir uma turma que possui crianças ou histórico de matrículas.');
+        }
+
         $turma->delete();
 
         LogAuditoria::create([
