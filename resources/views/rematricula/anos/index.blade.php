@@ -23,6 +23,12 @@
                     </div>
                 @endif
 
+                @if($errors->any())
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 shadow-sm" role="alert">
+                        <p>{{ $errors->first() }}</p>
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Formulário de Criação -->
                     <div class="md:col-span-1 bg-gray-50 p-6 rounded-lg border border-gray-200 h-fit">
@@ -70,7 +76,20 @@
                                                 {{ $ano->ano }}
                                             </td>
                                             <td class="py-3 px-4 text-left">
-                                                {{ $ano->data_virada ? $ano->data_virada->format('d/m/Y') : 'Não informada' }}
+                                                <form action="{{ route('rematricula.ano.update', $ano) }}" method="POST" class="flex items-center gap-2">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input
+                                                        type="date"
+                                                        name="data_virada"
+                                                        value="{{ $ano->data_virada?->format('Y-m-d') }}"
+                                                        class="rounded border-gray-300 focus:ring-multirao-roxo focus:border-multirao-roxo text-xs"
+                                                        required
+                                                    >
+                                                    <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded text-[10px] font-bold transition uppercase">
+                                                        Salvar
+                                                    </button>
+                                                </form>
                                             </td>
                                             <td class="py-3 px-4 text-center">
                                                 @if($ano->status_ativo)

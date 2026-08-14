@@ -77,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::match(['get', 'post'], '/rematricula', [\App\Http\Controllers\RematriculaController::class, 'index'])->name('rematricula.index');
     Route::get('/rematricula/anos', [\App\Http\Controllers\RematriculaController::class, 'anosIndex'])->name('rematricula.anos.index');
     Route::post('/rematricula/ano', [\App\Http\Controllers\RematriculaController::class, 'storeAno'])->name('rematricula.ano.store');
+    Route::patch('/rematricula/ano/{anoLetivo}', [\App\Http\Controllers\RematriculaController::class, 'updateAno'])->name('rematricula.ano.update');
     Route::post('/rematricula/ano/{id}/ativar', [\App\Http\Controllers\RematriculaController::class, 'ativarAno'])->name('rematricula.ano.ativar');
     Route::post('/rematricula/{id}/iniciar', [\App\Http\Controllers\RematriculaController::class, 'iniciar'])->name('rematricula.iniciar');
     Route::post('/rematricula/{id}/confirmar-dados', [\App\Http\Controllers\RematriculaController::class, 'confirmarDados'])->name('rematricula.confirmar_dados');

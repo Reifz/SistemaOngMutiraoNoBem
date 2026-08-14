@@ -73,7 +73,16 @@
                         </div>
                     @endif
 
-                    @if(!$podeIniciarRematricula)
+                    @if($anoAtual && !$anoAtual->data_virada)
+                        <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 shadow-sm" role="alert">
+                            <p class="font-bold uppercase text-xs">Data de virada não configurada</p>
+                            <p>
+                                Informe a data de virada do ano letivo de <b>{{ $anoAtual->ano }}</b> em
+                                <a href="{{ route('rematricula.anos.index') }}" class="font-bold underline">Gerenciar Períodos</a>
+                                para liberar as rematrículas.
+                            </p>
+                        </div>
+                    @elseif(!$podeIniciarRematricula)
                         <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 shadow-sm" role="alert">
                             <p class="font-bold uppercase text-xs">Período de Rematrícula não Iniciado</p>
                             @if($anoAtual)

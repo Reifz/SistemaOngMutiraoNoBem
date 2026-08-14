@@ -66,7 +66,10 @@ class RelatorioController extends Controller
             ->orderBy('total', 'desc')
             ->first();
 
-        $evadidos = $queryEvadidos->with(['responsavel'])->orderBy('data_evasao', 'desc')->get();
+        $evadidos = (clone $queryEvadidos)
+            ->with(['responsavel'])
+            ->orderBy('data_evasao', 'desc')
+            ->get();
         $totalEvadidos = $evadidos->count();
 
         // Cálculo da Taxa
@@ -134,7 +137,10 @@ class RelatorioController extends Controller
             $queryEvadidos->where('periodo_escolar', $periodo);
         }
 
-        $evadidos = $queryEvadidos->with(['responsavel'])->orderBy('data_evasao', 'desc')->get();
+        $evadidos = (clone $queryEvadidos)
+            ->with(['responsavel'])
+            ->orderBy('data_evasao', 'desc')
+            ->get();
         $totalEvadidos = $evadidos->count();
 
         $taxaEvasao = $totalMatriculados > 0 ? ($totalEvadidos / $totalMatriculados) * 100 : 0;

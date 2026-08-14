@@ -126,6 +126,21 @@ class RematriculaController extends Controller
     }
 
     /**
+     * Atualiza a data de virada de um ano letivo existente.
+     */
+    public function updateAno(Request $request, AnoLetivo $anoLetivo)
+    {
+        $validated = $request->validate([
+            'data_virada' => 'required|date',
+        ]);
+
+        $anoLetivo->update($validated);
+
+        return redirect()->route('rematricula.anos.index')
+            ->with('success', 'Data de virada do ano letivo ' . $anoLetivo->ano . ' atualizada com sucesso!');
+    }
+
+    /**
      * Define um ano letivo como ativo.
      */
     public function ativarAno($id)
