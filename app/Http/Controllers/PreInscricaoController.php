@@ -92,8 +92,11 @@ class PreInscricaoController extends Controller
 
             // 2. Notifica o dono da ONG
             try {
-                Notification::route('mail', 'EMAIL@gmail.com')
-                    ->notify(new NovaInscricaoAdminNotification($crianca, $responsavel));
+                $adminEmail = config('multirao.admin_email');
+                if ($adminEmail) {
+                    Notification::route('mail', $adminEmail)
+                        ->notify(new NovaInscricaoAdminNotification($crianca, $responsavel));
+                }
             } catch (\Exception $e) {
                 Log::warning('Falha ao enviar e-mail para o administrador: ' . $e->getMessage());
             }

@@ -12,4 +12,15 @@ return [
     |
     */
     'data_virada_ano_letivo' => env('DATA_VIRADA_ANO_LETIVO', '01-01'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | E-mail do Administrador da ONG
+    |--------------------------------------------------------------------------
+    |
+    | Endereço que recebe a notificação de cada nova pré-inscrição pública.
+    | Se vazio, a notificação ao administrador não é enviada.
+    |
+    */
+    'admin_email' => env('MUTIRAO_ADMIN_EMAIL'),
 ];
