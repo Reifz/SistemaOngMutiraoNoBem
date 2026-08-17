@@ -1,0 +1,112 @@
+name: Release e Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Deployar mesmo sem release novo (recuperação de deploy falho)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+jobs:
+  release-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # criar tags e releases
+      issues: write # comentar em issues referenciadas
+      pull-requests: write # comentar em PRs referenciados
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # semantic-release analisa todo o histórico (e o git describe precisa das tags)
+          persist-credentials: false
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Semantic Release (tag + release + changelog)
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Os plugins também estão declarados no .releaserc.json — instalar
+          # aqui sem listar lá NÃO os executa.
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+
+      - name: Decidir se o deploy roda
+        id: gate
+        run: |
+          if [ "${{ steps.semantic.outputs.new_release_published }}" = "true" ] || [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: PHP 8.5 + Composer
+        if: steps.gate.outputs.deploy == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: gd, mbstring, intl, dom, fileinfo, pdo_mysql
+          tools: composer:v2
+
+      - name: Build de produção
+        if: steps.gate.outputs.deploy == 'true'
+        run: |
+          ./deploy/build.sh
+          if [ "${{ steps.semantic.outputs.new_release_published }}" = "true" ]; then
+            echo "${{ steps.semantic.outputs.new_release_version }}" > VERSION
+          fi
+          echo "Versão do deploy: $(cat VERSION)"
+
+      - name: Preparar chave SSH
+        if: steps.gate.outputs.deploy == 'true'
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Chave pública do host fixada (evita trust-on-first-use a cada run)
+          printf '%s\n' '[162.241.2.126]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXKS8AJwfGLLwr+VIR0iDG6sM4VdYuZ0tLwSfFlTHXZ' >> ~/.ssh/known_hosts
+
+      - name: Deploy (rsync + artisan remoto)
+        if: steps.gate.outputs.deploy == 'true'
+        run: SKIP_BUILD=1 DEPLOY_KEY_FILE="$HOME/.ssh/deploy_key" ./deploy/deploy.sh
+
+      - name: Resumo do deploy
+        if: steps.gate.outputs.deploy == 'true'
+        run: |
+          echo "## 🚀 Deploy concluído" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Versão** | \`$(cat VERSION)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Release novo** | \`${{ steps.semantic.outputs.new_release_published }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **URL** | https://app.mutiraonobem.org.br (versão visível na tela de login) |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Nenhum release necessário
+        if: steps.gate.outputs.deploy != 'true'
+        run: |
+          echo "## ℹ️ Nenhum release publicado" >> $GITHUB_STEP_SUMMARY
+          echo "Nenhuma mudança relevante desde o último release — deploy não executado." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Para gerar release + deploy, use commits convencionais:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`feat:\` nova funcionalidade (versão minor)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`fix:\` correção (versão patch)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`BREAKING CHANGE:\` no rodapé (versão major)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Para redeployar sem release novo: Actions → Release e Deploy → Run workflow → force_deploy." >> $GITHUB_STEP_SUMMARY

@@ -29,8 +29,12 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Handler do PHP no HostGator (ea-php85) — sem este bloco o subdomínio
-# volta ao PHP herdado do servidor (7.4) e o site quebra.
+# Bloco copiado byte a byte do que o cPanel gravou no servidor (não alterar):
+# sem ele o subdomínio volta ao PHP herdado (7.4) e o site quebra. Se a versão
+# de PHP for trocada no painel um dia, copiar o novo bloco do servidor para cá.
+# php -- BEGIN cPanel-generated handler, do not edit
+# Defina o pacote “ea-php85” como a linguagem padrão de programação “PHP”.
 <IfModule mime_module>
-  AddHandler application/x-httpd-ea-php85 .php .php8 .phtml
+  AddHandler application/x-httpd-ea-php85___lsphp .php .php8 .phtml
 </IfModule>
+# php -- END cPanel-generated handler, do not edit

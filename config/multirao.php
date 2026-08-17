@@ -23,4 +23,15 @@ return [
     |
     */
     'admin_email' => env('MUTIRAO_ADMIN_EMAIL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Versão da Aplicação
+    |--------------------------------------------------------------------------
+    |
+    | Lida do arquivo VERSION gerado no build/deploy (git describe ou release
+    | do CI). Congelada pelo config:cache em produção. "dev" quando ausente.
+    |
+    */
+    'versao' => trim((string) @file_get_contents(base_path('VERSION'))) ?: 'dev',
 ];

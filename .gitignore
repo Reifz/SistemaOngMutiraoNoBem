@@ -17,6 +17,7 @@ Thumbs.db
 credenciais*.md
 
 # PHP/Laravel dependencies and generated files
+/VERSION
 /vendor/
 /node_modules/
 /.npm-cache/
